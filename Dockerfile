@@ -24,9 +24,10 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-# Render assigns PORT at runtime; use shell-form ENTRYPOINT so $PORT expands then, not at build time
+# Render always uses PORT=10000; hardcode it so no shell expansion is needed
+ENV ASPNETCORE_URLS=http://+:10000
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 10000
 
-ENTRYPOINT ["/bin/sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-10000} dotnet PlanToSave.Web.dll"]
+ENTRYPOINT ["dotnet", "PlanToSave.Web.dll"]
