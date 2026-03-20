@@ -1,0 +1,87 @@
+## .NET / C# ##
+*.user
+*.userosscache
+*.suo
+*.cache
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.VC.db
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/repositories.config
+*.nuspec
+
+# MSBuild
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio
+.vs/
+*.rsuser
+*.vsp
+*.vspx
+*.sap
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nCrunchTemp_*
+project.lock.json
+/monodevelop-bin/
+
+# VS Code
+.vscode/
+
+# EF Core Migrations (keep migrations, ignore snapshot? No — keep everything)
+# Migrations are committed intentionally
+
+# User secrets (never commit these)
+**/Properties/launchSettings.json
+**/secrets.json
+
+# Docker
+.dockerignore
+
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
