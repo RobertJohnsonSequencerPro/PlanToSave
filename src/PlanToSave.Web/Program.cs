@@ -35,12 +35,32 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
     });
 }
 
-// Resolve connection string: Render provides DATABASE_URL env var; fall back to appsettings.
-// Npgsql requires "postgresql://" scheme; Render uses "postgres://" — normalize it.
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+// Resolve connection string: Render provides DATABASE_URL as a URI; Npgsql needs key=value format.
+var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("No database connection string configured.");
-connectionString = connectionString.Replace("postgres://", "postgresql://", StringComparison.Ordinal);
+
+// Convert URI format (postgres://user:pass@host:port/db) to Npgsql key=value format
+string connectionString;
+if (rawConnectionString.StartsWith("postgres://") || rawConnectionString.StartsWith("postgresql://"))
+{
+    var uri = new Uri(rawConnectionString.Replace("postgres://", "postgresql://"));
+    var userInfo = uri.UserInfo.Split(':');
+    var npgsqlBuilder = new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Database = uri.AbsolutePath.TrimStart('/'),
+        Username = userInfo[0],
+        Password = userInfo.Length > 1 ? userInfo[1] : string.Empty,
+        SslMode = Npgsql.SslMode.Require
+    };
+    connectionString = npgsqlBuilder.ConnectionString;
+}
+else
+{
+    connectionString = rawConnectionString;
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -59,7 +79,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Database migration failed. Ensure the database exists and the connection string is correct.");
+        throw;
+    }
 }
 
 // Configure the HTTP request pipeline.
