@@ -24,10 +24,9 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-# Render assigns PORT; ASP.NET Core reads ASPNETCORE_URLS
-ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
+# Render assigns PORT at runtime; use shell-form ENTRYPOINT so $PORT expands then, not at build time
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-EXPOSE 8080
+EXPOSE 10000
 
-ENTRYPOINT ["dotnet", "PlanToSave.Web.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-10000} dotnet PlanToSave.Web.dll"]
