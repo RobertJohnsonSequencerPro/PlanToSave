@@ -35,10 +35,12 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
     });
 }
 
-// Resolve connection string: Render provides DATABASE_URL env var; fall back to appsettings
+// Resolve connection string: Render provides DATABASE_URL env var; fall back to appsettings.
+// Npgsql requires "postgresql://" scheme; Render uses "postgres://" — normalize it.
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("No database connection string configured.");
+connectionString = connectionString.Replace("postgres://", "postgresql://", StringComparison.Ordinal);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
