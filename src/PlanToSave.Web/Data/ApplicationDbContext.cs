@@ -15,6 +15,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        builder.HasDefaultSchema("plantosave");
+
         base.OnModelCreating(builder);
 
         // ── Accounts ──────────────────────────────────────────────────

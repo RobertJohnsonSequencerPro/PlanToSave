@@ -17,6 +17,7 @@ namespace PlanToSave.Web.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("plantosave")
                 .HasAnnotation("ProductVersion", "8.0.25")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -45,7 +46,7 @@ namespace PlanToSave.Web.Migrations
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex");
 
-                    b.ToTable("AspNetRoles", (string)null);
+                    b.ToTable("AspNetRoles", "plantosave");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -70,7 +71,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetRoleClaims", (string)null);
+                    b.ToTable("AspNetRoleClaims", "plantosave");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -95,7 +96,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserClaims", (string)null);
+                    b.ToTable("AspNetUserClaims", "plantosave");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
@@ -117,7 +118,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserLogins", (string)null);
+                    b.ToTable("AspNetUserLogins", "plantosave");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
@@ -132,7 +133,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles", (string)null);
+                    b.ToTable("AspNetUserRoles", "plantosave");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -151,7 +152,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("AspNetUserTokens", (string)null);
+                    b.ToTable("AspNetUserTokens", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.Account", b =>
@@ -187,7 +188,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Accounts");
+                    b.ToTable("Accounts", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.ActualFlow", b =>
@@ -235,7 +236,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ActualFlows");
+                    b.ToTable("ActualFlows", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.FlowTemplate", b =>
@@ -277,7 +278,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FlowTemplates");
+                    b.ToTable("FlowTemplates", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.Goal", b =>
@@ -329,7 +330,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Goals");
+                    b.ToTable("Goals", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.MonthlyPlan", b =>
@@ -360,7 +361,7 @@ namespace PlanToSave.Web.Migrations
                     b.HasIndex("UserId", "Year", "Month")
                         .IsUnique();
 
-                    b.ToTable("MonthlyPlans");
+                    b.ToTable("MonthlyPlans", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.PlannedFlow", b =>
@@ -404,7 +405,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("ToAccountId");
 
-                    b.ToTable("PlannedFlows");
+                    b.ToTable("PlannedFlows", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Web.Data.ApplicationUser", b =>
@@ -471,7 +472,7 @@ namespace PlanToSave.Web.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.ToTable("AspNetUsers", (string)null);
+                    b.ToTable("AspNetUsers", "plantosave");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
