@@ -14,18 +14,52 @@
             </svg>
             My Ideas
         </h1>
-        <p class="text-muted small mb-0">Browse, filter, and manage your activity backlog.</p>
+        <p class="text-muted small mb-0">Capture the fun things you want to do <em>and</em> the practical things you want to plan for — adventures, trips, and yes, new tires too.</p>
     </div>
-    <button class="btn btn-primary" @onclick="ToggleAddForm">
-        @(showAddForm ? "Cancel" : "+ Add Idea")
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-warning btn-sm" @onclick="ToggleSuggestions" title="Browse ideas for inspiration">
+            💡 @(showSuggestions ? "Hide inspiration" : "Need inspiration?")
+        </button>
+        <button class="btn btn-primary" @onclick="ToggleAddForm">
+            @(showAddForm ? "Cancel" : "+ Add Idea")
+        </button>
+    </div>
 </div>
+
+@if (showSuggestions)
+{
+    <div class="card mt-3 mb-2 border-warning">
+        <div class="card-body pb-2">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h6 class="fw-semibold mb-0">💡 Inspiration — what could you plan for?</h6>
+                    <p class="text-muted small mb-0">Click any idea below to pre-fill the form. Life is richer when you plan for both the fun <em>and</em> the practical.</p>
+                </div>
+                <button type="button" class="btn-close" @onclick="ToggleSuggestions" aria-label="Close"></button>
+            </div>
+            @foreach (var group in IdeaSuggestions)
+            {
+                <div class="mb-3">
+                    <div class="text-muted small fw-semibold text-uppercase mb-1" style="letter-spacing:.05em">@group.Label</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var s in group.Items)
+                        {
+                            <button type="button" class="btn btn-sm @group.BtnClass" @onclick="() => UsePrompt(s.Title, s.Category)">
+                                @s.Title
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
 
 @if (showAddForm)
 {
     <div class="card mt-3 mb-2">
         <div class="card-body">
-            <h6 class="card-subtitle mb-3 text-muted">Capture a fun activity you'd like to do someday.</h6>
+            <h6 class="card-subtitle mb-3 text-muted">Capture something you want to do — a fun adventure <em>or</em> a practical goal like replacing your tires before they wear out.</h6>
             <EditForm Model="newIdea" OnValidSubmit="SaveIdea">
                 <DataAnnotationsValidator />
                 <div class="row g-2">
@@ -167,8 +201,11 @@ else if (ideas.Count == 0)
                     <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
                 </svg>
                 <h5 class="fw-semibold mb-1">Your idea backlog is empty</h5>
-                <p class="mb-3 small">This is where you collect activities and experiences you want to have — restaurants to try, trips to take, skills to learn. Start dreaming!</p>
-                <button class="btn btn-primary" @onclick="ToggleAddForm">+ Add your first idea</button>
+                <p class="mb-3 small">This is where you collect everything you want to plan for — a trip to Japan, a weekend kayak, <em>and</em> practical things like replacing worn tires before they leave you stranded. Big dreams and smart prep, all in one place.</p>
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <button class="btn btn-primary" @onclick="ToggleAddForm">+ Add your first idea</button>
+                    <button class="btn btn-outline-warning" @onclick="OpenSuggestions">💡 Get inspired</button>
+                </div>
             }
         </div>
     </div>
@@ -269,6 +306,7 @@ else
     private List<IdeaDto>? ideas;
     private string userId = "";
     private bool showAddForm = false;
+    private bool showSuggestions = false;
     private SaveIdeaDto newIdea = new();
     private string? formError;
 
@@ -322,6 +360,79 @@ else
             formError = null;
         }
     }
+
+    private void ToggleSuggestions() => showSuggestions = !showSuggestions;
+
+    private void OpenSuggestions()
+    {
+        showSuggestions = true;
+        showAddForm = false;
+    }
+
+    private void UsePrompt(string title, IdeaCategory category)
+    {
+        newIdea = new SaveIdeaDto { Title = title, Category = category };
+        formError = null;
+        showAddForm = true;
+        showSuggestions = false;
+    }
+
+    // ─── Inspiration suggestions ───────────────────────────────────────────────
+
+    private record IdeaPrompt(string Title, IdeaCategory Category);
+
+    private record IdeaGroup(string Label, string BtnClass, IdeaPrompt[] Items);
+
+    private static readonly IdeaGroup[] IdeaSuggestions =
+    [
+        new("🎉 Fun & Entertainment", "btn-outline-primary",
+        [
+            new("Attend a live concert or show", IdeaCategory.Entertainment),
+            new("Host a backyard game night", IdeaCategory.Entertainment),
+            new("Visit an escape room", IdeaCategory.Entertainment),
+            new("Go to a local festival", IdeaCategory.Entertainment),
+        ]),
+        new("✈️ Travel & Adventure", "btn-outline-info",
+        [
+            new("Take a weekend road trip", IdeaCategory.Travel),
+            new("Plan an international vacation", IdeaCategory.Travel),
+            new("Visit a national park", IdeaCategory.Travel),
+            new("Explore a city you've never been to", IdeaCategory.Travel),
+            new("Go kayaking or canoeing", IdeaCategory.Travel),
+            new("Weekend camping trip", IdeaCategory.Travel),
+        ]),
+        new("🍽️ Dining & Social", "btn-outline-warning",
+        [
+            new("Try that restaurant on the wishlist", IdeaCategory.Dining),
+            new("Take a cooking class", IdeaCategory.Dining),
+            new("Host a dinner party", IdeaCategory.Social),
+            new("Go wine or craft beer tasting", IdeaCategory.Dining),
+        ]),
+        new("🔧 Practical & Responsible", "btn-outline-secondary",
+        [
+            new("Replace car tires before they wear out", IdeaCategory.Other),
+            new("Build a 3-month emergency fund", IdeaCategory.Other),
+            new("Replace aging appliances", IdeaCategory.Other),
+            new("Get a home deep clean or declutter", IdeaCategory.Other),
+            new("Set up or update a will", IdeaCategory.Other),
+            new("Schedule overdue car maintenance", IdeaCategory.Other),
+        ]),
+        new("🌱 Wellness & Health", "btn-outline-success",
+        [
+            new("Join a gym or fitness class", IdeaCategory.Wellness),
+            new("Schedule an annual physical", IdeaCategory.Wellness),
+            new("Get a dental checkup", IdeaCategory.Wellness),
+            new("Start a meditation or mindfulness habit", IdeaCategory.Wellness),
+            new("Buy a quality bike for commuting", IdeaCategory.Wellness),
+        ]),
+        new("📚 Learning & Growth", "btn-outline-dark",
+        [
+            new("Take an online course", IdeaCategory.Learning),
+            new("Learn a new language", IdeaCategory.Learning),
+            new("Read 12 books this year", IdeaCategory.Learning),
+            new("Pick up a musical instrument", IdeaCategory.Learning),
+        ]),
+    ];
 
     private async Task SaveIdea()
     {
