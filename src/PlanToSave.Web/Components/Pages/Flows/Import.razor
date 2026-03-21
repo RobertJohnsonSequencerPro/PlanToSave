@@ -49,7 +49,7 @@
             <div class="row g-3 mb-4">
                 <div class="col-sm-4">
                     <label class="form-label small fw-semibold">Date column <span class="text-danger">*</span></label>
-                    <select class="form-select form-select-sm" @onchange="e => { mapping.DateColumn = e.Value?.ToString(); Reparse(); }">
+                    <select class="form-select form-select-sm" @onchange="async e => { mapping.DateColumn = e.Value?.ToString(); await ReparseAsync(); }">
                         <option value="">— select —</option>
                         @foreach (var h in parseResult.DetectedHeaders)
                         {
@@ -60,7 +60,7 @@
 
                 <div class="col-sm-4">
                     <label class="form-label small fw-semibold">Description column</label>
-                    <select class="form-select form-select-sm" @onchange="e => { mapping.DescriptionColumn = e.Value?.ToString(); Reparse(); }">
+                    <select class="form-select form-select-sm" @onchange="async e => { mapping.DescriptionColumn = e.Value?.ToString(); await ReparseAsync(); }">
                         <option value="">— none —</option>
                         @foreach (var h in parseResult.DetectedHeaders)
                         {
@@ -78,7 +78,7 @@
                 </div>
                 <div class="col-sm-4">
                     <label class="form-label small fw-semibold">Amount column (signed)</label>
-                    <select class="form-select form-select-sm" @onchange="e => { mapping.AmountColumn = e.Value?.ToString(); mapping.CreditColumn = null; mapping.DebitColumn = null; Reparse(); }">
+                    <select class="form-select form-select-sm" @onchange="async e => { mapping.AmountColumn = e.Value?.ToString(); mapping.CreditColumn = null; mapping.DebitColumn = null; await ReparseAsync(); }">
                         <option value="">— none —</option>
                         @foreach (var h in parseResult.DetectedHeaders)
                         {
@@ -88,7 +88,7 @@
                 </div>
                 <div class="col-sm-4">
                     <label class="form-label small fw-semibold">Credit column (money IN)</label>
-                    <select class="form-select form-select-sm" @onchange="e => { mapping.CreditColumn = e.Value?.ToString(); mapping.AmountColumn = null; Reparse(); }">
+                    <select class="form-select form-select-sm" @onchange="async e => { mapping.CreditColumn = e.Value?.ToString(); mapping.AmountColumn = null; await ReparseAsync(); }">
                         <option value="">— none —</option>
                         @foreach (var h in parseResult.DetectedHeaders)
                         {
@@ -98,7 +98,7 @@
                 </div>
                 <div class="col-sm-4">
                     <label class="form-label small fw-semibold">Debit column (money OUT)</label>
-                    <select class="form-select form-select-sm" @onchange="e => { mapping.DebitColumn = e.Value?.ToString(); mapping.AmountColumn = null; Reparse(); }">
+                    <select class="form-select form-select-sm" @onchange="async e => { mapping.DebitColumn = e.Value?.ToString(); mapping.AmountColumn = null; await ReparseAsync(); }">
                         <option value="">— none —</option>
                         @foreach (var h in parseResult.DetectedHeaders)
                         {
@@ -243,15 +243,21 @@
                                 @if (!hasError && !isZero)
                                 {
                                     var counterOptions = isCredit ? fromAccounts : toAccounts;
-                                    <select class="form-select form-select-sm" style="min-width:150px;font-size:.8rem"
-                                            value="@state.CounterAccountId"
-                                            @onchange="e => { if (Guid.TryParse(e.Value?.ToString(), out var gid)) state.CounterAccountId = gid; }">
-                                        <option value="@Guid.Empty">— none —</option>
-                                        @foreach (var a in counterOptions)
+                                    <div class="d-flex align-items-center gap-1">
+                                        <select class="form-select form-select-sm" style="min-width:140px;font-size:.8rem"
+                                                value="@state.CounterAccountId"
+                                                @onchange="e => { if (Guid.TryParse(e.Value?.ToString(), out var gid)) { state.CounterAccountId = gid; state.WasGuessed = false; } }">
+                                            <option value="@Guid.Empty">— none —</option>
+                                            @foreach (var a in counterOptions)
+                                            {
+                                                <option value="@a.Id" selected="@(state.CounterAccountId == a.Id)">@a.Name</option>
+                                            }
+                                        </select>
+                                        @if (state.WasGuessed)
                                         {
-                                            <option value="@a.Id" selected="@(state.CounterAccountId == a.Id)">@a.Name</option>
+                                            <span class="badge text-bg-info" style="font-size:.65rem" title="Auto-suggested from your transaction history">auto</span>
                                         }
-                                    </select>
+                                    </div>
                                 }
                             </td>
                             <td class="text-muted">@(row.Description ?? "—")</td>
@@ -323,6 +329,7 @@
         public required CsvPreviewRow Row { get; set; }
         public bool Skip { get; set; }
         public Guid CounterAccountId { get; set; }
+        public bool WasGuessed { get; set; }
     }
     private List<RowState> rowStates = [];
 
@@ -393,14 +400,39 @@
         mapping      = result.SuggestedMapping;
         parseResult  = result;
         BuildRowStates(result);
+        await ApplySuggestionsAsync();
     }
 
-    private void Reparse()
+    private async Task ReparseAsync()
     {
         if (csvText is null) return;
         var result = CsvParser.Parse(csvText, mapping);
         parseResult = result;
         BuildRowStates(result);
+        await ApplySuggestionsAsync();
+    }
+
+    private async Task ApplySuggestionsAsync()
+    {
+        if (string.IsNullOrEmpty(userId)) return;
+        var descriptions = rowStates
+            .Where(r => r.Row.Description is not null)
+            .Select(r => r.Row.Description)
+            .ToList<string?>();
+        if (descriptions.Count == 0) return;
+
+        var (deposits, withdrawals) = await FlowService.SuggestCounterAccountsAsync(userId, descriptions);
+
+        foreach (var state in rowStates)
+        {
+            if (state.Row.Description is null || state.Row.Amount is null) continue;
+            var lookup = state.Row.Amount > 0 ? deposits : withdrawals;
+            if (lookup.TryGetValue(state.Row.Description, out var suggestedId) && suggestedId != Guid.Empty)
+            {
+                state.CounterAccountId = suggestedId;
+                state.WasGuessed = true;
+            }
+        }
     }
 
     private void BuildRowStates(CsvParseResult result)
@@ -420,14 +452,20 @@
     {
         inflowAccountId = Guid.TryParse(val, out var id) ? id : Guid.Empty;
         foreach (var s in rowStates.Where(r => r.Row.Amount > 0))
+        {
             s.CounterAccountId = inflowAccountId;
+            s.WasGuessed = false;
+        }
     }
 
     private void ApplyDefaultOutflow(string? val)
     {
         outflowAccountId = Guid.TryParse(val, out var id) ? id : Guid.Empty;
         foreach (var s in rowStates.Where(r => r.Row.Amount < 0))
+        {
             s.CounterAccountId = outflowAccountId;
+            s.WasGuessed = false;
+        }
     }
 
     private async Task DoImport()

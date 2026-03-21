@@ -25,7 +25,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">New Account</h5>
+                    <h5 class="modal-title">New Account or Category</h5>
                     <button type="button" class="btn-close" @onclick="CloseAccountModal"></button>
                 </div>
                 <EditForm Model="newAccount" OnValidSubmit="SaveNewAccount">
@@ -412,7 +412,7 @@ else
         AccountType.Credit     => "Credit card or line of credit.",
         AccountType.Investment => "Brokerage or investment account.",
         AccountType.Income     => "An income source (salary, freelance, etc.) — no balance tracked.",
-        AccountType.Expense    => "A spending category (rent, groceries, etc.) — no balance tracked.",
+        AccountType.Expense    => "A spending category (groceries, utilities, dining, etc.) — no balance tracked.",
         _                      => ""
     };
 }

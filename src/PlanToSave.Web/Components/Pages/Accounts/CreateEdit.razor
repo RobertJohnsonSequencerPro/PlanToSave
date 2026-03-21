@@ -5,18 +5,18 @@
 @inject NavigationManager Nav
 @using PlanToSave.Domain.Enums
 
-<PageTitle>@(Id is null ? "New Account" : "Edit Account") — PlanToSave</PageTitle>
+<PageTitle>@(Id is null ? "New Account or Category" : "Edit Account") — PlanToSave</PageTitle>
 
 <div class="row">
     <div class="col-md-7 col-lg-5">
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/accounts">Accounts</a></li>
-                <li class="breadcrumb-item active">@(Id is null ? "New Account" : "Edit Account")</li>
+                <li class="breadcrumb-item active">@(Id is null ? "New Account or Category" : "Edit Account")</li>
             </ol>
         </nav>
 
-        <h1 class="mb-4">@(Id is null ? "New Account" : "Edit Account")</h1>
+        <h1 class="mb-4">@(Id is null ? "New Account or Category" : "Edit Account")</h1>
 
         @if (model is not null)
         {
@@ -274,8 +274,8 @@
 
     private static string GetTypeHint(AccountType type) => type switch
     {
-        AccountType.Income     => "Money flowing in from the outside world (salary, freelance, etc.). No running balance — period totals only.",
-        AccountType.Expense    => "Money flowing out to the world (groceries, utilities, etc.). No running balance — period totals only.",
+        AccountType.Income     => "An income source (salary, freelance, rent received, etc.). No running balance — period totals only.",
+        AccountType.Expense    => "A spending category (groceries, utilities, dining, etc.). No running balance — period totals only.",
         AccountType.Checking   => "A day-to-day bank account. Tracks a running balance.",
         AccountType.Savings    => "A savings account. Tracks a running balance.",
         AccountType.Credit     => "A credit card or line of credit. Balance goes negative as you spend, positive when paid off.",

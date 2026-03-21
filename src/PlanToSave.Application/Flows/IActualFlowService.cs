@@ -21,4 +21,13 @@ public interface IActualFlowService
     /// </summary>
     Task<(int Imported, List<string> Errors)> BulkImportAsync(
         string userId, List<BulkImportRowDto> rows);
+
+    /// <summary>
+    /// For a list of raw transaction descriptions, returns the most-frequently-used
+    /// counter-account from the user's history, split by direction.
+    /// Keys are the raw description strings provided. Only descriptions with a
+    /// confident historical match are included in the result dictionaries.
+    /// </summary>
+    Task<(Dictionary<string, Guid> Deposits, Dictionary<string, Guid> Withdrawals)>
+        SuggestCounterAccountsAsync(string userId, IReadOnlyList<string?> descriptions);
 }

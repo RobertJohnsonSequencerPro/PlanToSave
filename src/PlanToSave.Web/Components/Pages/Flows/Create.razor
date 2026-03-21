@@ -153,7 +153,7 @@
             model.FromAccountId = id;
             var selected = fromOptions.FirstOrDefault(a => a.Id == id);
             fromHint = selected?.Type == AccountType.Income
-                ? "Income account — money enters your plan from here."
+                ? "Income source — money enters your plan from here."
                 : null;
 
             // If Income is selected as From, exclude Income from To options
@@ -184,7 +184,7 @@
             model.ToAccountId = id;
             var selected = toOptions.FirstOrDefault(a => a.Id == id);
             toHint = selected?.Type == AccountType.Expense
-                ? "Expense account — money leaves your plan here."
+                ? "Spending category — money leaves your plan here."
                 : null;
         }
         else

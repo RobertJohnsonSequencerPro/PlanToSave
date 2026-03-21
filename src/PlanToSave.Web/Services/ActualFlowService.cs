@@ -166,4 +166,100 @@ public class ActualFlowService(ApplicationDbContext db) : IActualFlowService
         f.FromAccountId, f.FromAccount.Name, f.FromAccount.Type,
         f.ToAccountId,   f.ToAccount.Name,   f.ToAccount.Type,
         f.Amount, f.Date, f.Description, f.CreatedAt);
+
+    // ── Description-based account suggestions ────────────────────────────────
+
+    public async Task<(Dictionary<string, Guid> Deposits, Dictionary<string, Guid> Withdrawals)>
+        SuggestCounterAccountsAsync(string userId, IReadOnlyList<string?> descriptions)
+    {
+        // Load history once — project only what we need
+        var history = await db.ActualFlows
+            .Where(f => f.UserId == userId && f.Description != null)
+            .Select(f => new
+            {
+                f.Description,
+                f.FromAccountId,
+                FromType = f.FromAccount.Type,
+                f.ToAccountId,
+                ToType = f.ToAccount.Type,
+            })
+            .ToListAsync();
+
+        // Build frequency maps: normalizedKey → (accountId → count)
+        var depositCounts     = new Dictionary<string, Dictionary<Guid, int>>();
+        var withdrawalCounts  = new Dictionary<string, Dictionary<Guid, int>>();
+
+        foreach (var h in history)
+        {
+            var key = NormalizeDescription(h.Description);
+            if (key.Length == 0) continue;
+
+            // Deposit counter = FromAccount when it is an Income source
+            if (h.FromType == AccountType.Income)
+                Increment(depositCounts, key, h.FromAccountId);
+
+            // Withdrawal counter = ToAccount when it is a spending category (Expense)
+            if (h.ToType == AccountType.Expense)
+                Increment(withdrawalCounts, key, h.ToAccountId);
+        }
+
+        var depositSuggestions    = new Dictionary<string, Guid>();
+        var withdrawalSuggestions = new Dictionary<string, Guid>();
+
+        foreach (var raw in descriptions)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) continue;
+            var key = NormalizeDescription(raw);
+            if (key.Length == 0) continue;
+
+            if (depositCounts.TryGetValue(key, out var dCounts))
+                depositSuggestions[raw] = BestAccount(dCounts);
+
+            if (withdrawalCounts.TryGetValue(key, out var wCounts))
+                withdrawalSuggestions[raw] = BestAccount(wCounts);
+        }
+
+        return (depositSuggestions, withdrawalSuggestions);
+    }
+
+    /// <summary>Strips bank-statement noise to extract the core merchant/payee token(s).</summary>
+    internal static string NormalizeDescription(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+
+        var s = raw.ToUpperInvariant().Trim();
+
+        // Strip common prefixes that add no merchant identity
+        string[] prefixes =
+        [
+            "POS DEBIT ", "POS CREDIT ", "ACH DEBIT ", "ACH CREDIT ",
+            "ONLINE PAYMENT TO ", "ONLINE PAYMENT ", "DIRECT DEPOSIT ",
+            "DIRECT DEBIT ", "CHECKCARD ", "PURCHASE ", "RECURRING PAYMENT ",
+            "DEBIT CARD PURCHASE ", "EXTERNAL TRANSFER TO ", "EXTERNAL TRANSFER ",
+            "BILL PAYMENT TO ", "BILL PAYMENT ",
+        ];
+        foreach (var p in prefixes)
+            if (s.StartsWith(p)) { s = s[p.Length..].TrimStart(); break; }
+
+        // Split and keep only tokens that contain at least one letter
+        // (filters out reference numbers, dates like 03/21, phone numbers, etc.)
+        var tokens = s
+            .Split([' ', '\t', '*', '/'], StringSplitOptions.RemoveEmptyEntries)
+            .Where(t => t.Any(char.IsLetter))
+            .Take(3)
+            .ToArray();
+
+        return tokens.Length > 0 ? string.Join(" ", tokens) : s[..Math.Min(15, s.Length)];
+    }
+
+    private static void Increment(Dictionary<string, Dictionary<Guid, int>> map, string key, Guid accountId)
+    {
+        if (!map.TryGetValue(key, out var counts))
+            map[key] = counts = new Dictionary<Guid, int>();
+        counts.TryGetValue(accountId, out var c);
+        counts[accountId] = c + 1;
+    }
+
+    private static Guid BestAccount(Dictionary<Guid, int> counts) =>
+        counts.MaxBy(kv => kv.Value).Key;
 }
