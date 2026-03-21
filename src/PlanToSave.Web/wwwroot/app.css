@@ -63,7 +63,18 @@ h1:focus {
    DARK THEME  (applied when <html data-theme="dark">)
 ──────────────────────────────────────────────────────────── */
 
-/* Base colours */
+/* Base colours + Bootstrap CSS variable overrides */
+[data-theme="dark"] {
+    /* Override Bootstrap 5.1 CSS variables so components that use var(--bs-*)
+       automatically get dark values without needing individual class overrides. */
+    --bs-body-bg:          #1a1d24;
+    --bs-body-color:       #dde4ec;
+    --bs-border-color:     #3a4258;
+    --bs-secondary-color:  #9baab8;
+    --bs-tertiary-bg:      #252c3d;
+    --bs-card-bg:          #21272f;
+    --bs-card-border-color:#3a4258;
+}
 [data-theme="dark"],
 [data-theme="dark"] body {
     color-scheme: dark;
