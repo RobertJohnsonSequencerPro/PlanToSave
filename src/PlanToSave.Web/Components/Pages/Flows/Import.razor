@@ -3,6 +3,7 @@
 @using PlanToSave.Web.Services
 @inject CsvImportService CsvParser
 @inject IActualFlowService FlowService
+@inject IAccountService AccountService
 @inject NavigationManager Nav
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Forms
@@ -120,9 +121,12 @@
 
             @* ── Account selection ───────────────────────────────────────────── *@
             <hr class="my-4" />
-            <h6 class="mb-3 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.08em">
-                Account assignment
-            </h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.08em">
+                    Account assignment
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="OpenAccountModal">+ New Account</button>
+            </div>
             <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
                 Positive rows (deposits/credits) → <strong>Inflow source</strong> to <strong>Bank account</strong><br />
                 Negative rows (withdrawals/debits) → <strong>Bank account</strong> to <strong>Outflow destination</strong>
@@ -302,6 +306,70 @@
     </button>
 }
 
+@if (showAccountModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New Account or Category</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAccountModal"></button>
+                </div>
+                <EditForm Model="newAccount" OnValidSubmit="SaveNewAccount">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Account Name</label>
+                            <InputText @bind-Value="newAccount.Name" class="form-control" placeholder="e.g. Main Checking" />
+                            <ValidationMessage For="() => newAccount.Name" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Account Type</label>
+                            <InputSelect @bind-Value="newAccount.Type" class="form-select">
+                                @foreach (var t in Enum.GetValues<AccountType>())
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </InputSelect>
+                            <div class="form-text text-muted">@GetAccountTypeHint(newAccount.Type)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Description <span class="fw-normal text-muted">(optional)</span>
+                            </label>
+                            <InputText @bind-Value="newAccount.Description" class="form-control"
+                                       placeholder="e.g. Joint account at First National Bank" />
+                        </div>
+                        @if (newAccount.Type is AccountType.Checking or AccountType.Savings
+                                             or AccountType.Credit or AccountType.Investment)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    Opening Balance <span class="fw-normal text-muted">(optional)</span>
+                                </label>
+                                <div class="input-group" style="max-width:200px">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="newAccount.OpeningBalance" class="form-control" step="0.01" />
+                                </div>
+                                <ValidationMessage For="() => newAccount.OpeningBalance" class="text-danger small" />
+                            </div>
+                        }
+                        @if (accountSaveError is not null)
+                        {
+                            <div class="text-danger small">@accountSaveError</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseAccountModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Account</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     // ── Auth ──────────────────────────────────────────────────────────────────
     [CascadingParameter]
@@ -342,6 +410,11 @@
     private bool importing;
     private string? importError;
     private (int Imported, List<string> Errors)? importResult;
+
+    // ── Account modal ─────────────────────────────────────────────────────────
+    private bool showAccountModal = false;
+    private CreateAccountDto newAccount = new();
+    private string? accountSaveError;
 
     // ─────────────────────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
@@ -527,4 +600,48 @@
             importing = false;
         }
     }
+
+    private void OpenAccountModal()
+    {
+        newAccount = new CreateAccountDto();
+        accountSaveError = null;
+        showAccountModal = true;
+    }
+
+    private void CloseAccountModal() => showAccountModal = false;
+
+    private async Task SaveNewAccount()
+    {
+        try
+        {
+            await AccountService.CreateAsync(userId, newAccount);
+
+            fromAccounts  = await FlowService.GetFromAccountOptionsAsync(userId);
+            toAccounts    = await FlowService.GetToAccountOptionsAsync(userId);
+            var allOptions = fromAccounts.Union(toAccounts).DistinctBy(a => a.Id).ToList();
+            stockAccounts  = allOptions
+                .Where(a => a.Type is AccountType.Checking
+                                   or AccountType.Savings
+                                   or AccountType.Credit
+                                   or AccountType.Investment)
+                .OrderBy(a => a.Name).ToList();
+
+            showAccountModal = false;
+        }
+        catch (Exception ex)
+        {
+            accountSaveError = ex.Message;
+        }
+    }
+
+    private static string GetAccountTypeHint(AccountType type) => type switch
+    {
+        AccountType.Checking   => "Everyday spending account with a running balance.",
+        AccountType.Savings    => "Savings account that earns interest.",
+        AccountType.Credit     => "Credit card or line of credit.",
+        AccountType.Investment => "Brokerage or investment account.",
+        AccountType.Income     => "An income source (salary, freelance, etc.) — no balance tracked.",
+        AccountType.Expense    => "A spending category (groceries, utilities, dining, etc.) — no balance tracked.",
+        _                      => ""
+    };
 }
