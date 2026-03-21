@@ -18,6 +18,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ActivityPlan> ActivityPlans => Set<ActivityPlan>();
     public DbSet<ActivityStep> ActivitySteps => Set<ActivityStep>();
     public DbSet<ActivityReview> ActivityReviews => Set<ActivityReview>();
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -92,8 +93,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasKey(f => f.Id);
             e.Property(f => f.Description).HasMaxLength(300);
             e.Property(f => f.Amount).HasPrecision(18, 2);
-            e.HasIndex(f => f.UserId);
-            e.HasIndex(f => f.Date);
+            e.HasIndex(f => new { f.UserId, f.Date });
             e.HasOne(f => f.FromAccount).WithMany().HasForeignKey(f => f.FromAccountId)
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasOne(f => f.ToAccount).WithMany().HasForeignKey(f => f.ToAccountId)
@@ -118,6 +118,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasOne(g => g.SourceAccount).WithMany().HasForeignKey(g => g.SourceAccountId)
                 .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(g => g.Idea).WithMany().HasForeignKey(g => g.IdeaId)
+                .IsRequired(false).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(g => g.UserId)
@@ -182,10 +184,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasKey(p => p.Id);
             e.Property(p => p.Notes).HasMaxLength(1000);
             e.Property(p => p.Status).HasConversion<string>();
-            e.HasIndex(p => p.UserId);
+            e.HasIndex(p => new { p.UserId, p.Status });
             e.HasIndex(p => p.PlannedDate);
             e.HasOne(p => p.Idea).WithMany(i => i.ActivityPlans)
                 .HasForeignKey(p => p.IdeaId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(p => p.PlannedFlow).WithMany().HasForeignKey(p => p.PlannedFlowId)
+                .IsRequired(false).OnDelete(DeleteBehavior.SetNull);
             e.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(p => p.UserId)
@@ -213,5 +217,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<ActivityReview>(r => r.ActivityPlanId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-    }
+        // ── CalendarEvents ────────────────────────────────────────────
+        builder.Entity<CalendarEvent>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasIndex(x => new { x.UserId, x.Date });
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });    }
 }

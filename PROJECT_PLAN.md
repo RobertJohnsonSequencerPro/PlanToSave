@@ -297,80 +297,78 @@ Phases 1–8 are complete and deployed. The remaining phases build the Life Loop
 
 ---
 
-### Phase 9 — Ideas Backlog *(next)*
+### ✅ Phase 9 — Ideas Backlog
 Introduce the fun activity backlog. This is the entry point to the life loop.
 
-- [ ] `Idea` entity + migration (`Category`, `EnergyLevel`, `CostEstimate`, `EstimatedAmount`, `Tags`, `Status`)
-- [ ] Ideas list page — table with filter by category, energy, cost, status, and tag text search
-- [ ] Add Idea form — title, description, category, energy, cost estimate, estimated amount, tags
-- [ ] Edit Idea inline or on a detail page
-- [ ] Delete Idea (soft or hard)
-- [ ] Status badge rendering (Backlog / Planned / Done / Skipped) with color coding
-- [ ] Nav link: **My Ideas** in the sidebar
-- [ ] Dashboard card: "X ideas in your backlog" with quick link to add one
+- [x] `Idea` entity + migration (`Category`, `EnergyLevel`, `CostEstimate`, `EstimatedAmount`, `Tags`, `Status`)
+- [x] Ideas list page — table with filter by category, energy, cost, status, and tag text search
+- [x] Add Idea form — title, description, category, energy, cost estimate, estimated amount, tags
+- [x] Delete Idea
+- [x] Status badge rendering (Backlog / Planned / Done / Skipped) with color coding
+- [x] Nav link: **My Ideas** in the sidebar
+- [x] Dashboard card: "X ideas in your backlog" with quick link to add one
+- [x] Inline "Plan This" form on Ideas list → creates ActivityPlan and updates Idea status
 
-### Phase 10 — Activity Planning
+### ✅ Phase 10 — Activity Planning
 Turn a backlog idea into a scheduled plan with an optional checklist.
 
-- [ ] `ActivityPlan` entity + migration (`PlannedDate`, `Status`, `Notes`, link to `IdeaId`)
-- [ ] `ActivityStep` entity + migration (`Title`, `SortOrder`, `IsComplete`)
-- [ ] "Plan This" button on an Idea → opens schedule form (date picker, optional notes)
-- [ ] Activity detail page — shows steps checklist, planned date, linked idea, linked goal
-- [ ] Add/reorder/complete/remove steps within the detail page
-- [ ] Upcoming Plans page — card grid sorted by date, showing progress bar (steps done/total), overdue flag
-- [ ] Idea status auto-updates to `Planned` when an ActivityPlan is created; back to `Backlog` if plan is deleted
-- [ ] Dashboard "Coming up this week" panel — activities with dates within the next 7 days
-- [ ] Nav: **Upcoming Plans** in sidebar
+- [x] `ActivityPlan` entity + migration (`PlannedDate`, `Status`, `Notes`, link to `IdeaId`)
+- [x] `ActivityStep` entity + migration (`Title`, `SortOrder`, `IsComplete`)
+- [x] "Plan This" button on an Idea → opens schedule form (date picker, optional notes)
+- [x] Activity detail page — shows steps checklist, planned date, linked idea; Add/toggle/delete steps
+- [x] Upcoming Plans page — card grid sorted by date, showing progress bar (steps done/total), overdue flag
+- [x] Idea status auto-updates to `Planned` when an ActivityPlan is created; back to `Backlog` if plan is deleted
+- [x] Dashboard "Coming up this week" panel — activities with dates within the next 7 days
+- [x] Nav: **Upcoming Plans** in sidebar
 
-### Phase 11 — Review Loop
+### ✅ Phase 11 — Review Loop
 Close the life loop: prompt the user to reflect after an activity date passes.
 
-- [ ] `ActivityReview` entity + migration (`Rating` 1–5, `Reflection`, `ActualAmount`)
-- [ ] "Needs review" detection: ActivityPlans where `PlannedDate < today` and `Status = Upcoming`
-- [ ] Review page — grid of cards needing review, each with "Yes, I did it!" / "Skip / didn't happen" actions
-- [ ] "Yes, I did it!" flow: star rating input, reflection textarea, actual cost field → saves `ActivityReview`, sets `Status = Done`, updates `Idea.Status = Done`
-- [ ] "Skip / didn't happen" → sets `Status = Skipped`, `Idea.Status = Backlog` (returns to backlog for replanning)
-- [ ] Dashboard "Needs review" panel — shows activities awaiting review with quick link
-- [ ] Dashboard: completed count stat card
-- [ ] Nav: **Review** in sidebar
+- [x] `ActivityReview` entity + migration (`Rating` 1–5, `Reflection`, `ActualAmount`)
+- [x] "Needs review" detection: ActivityPlans where `PlannedDate < today` and `Status = Upcoming`
+- [x] Review page — grid of cards needing review, each with "Yes, I did it!" / "Skip / didn't happen" actions
+- [x] "Yes, I did it!" flow: star rating input, reflection textarea, actual cost field → saves `ActivityReview`, sets `Status = Done`, updates `Idea.Status = Done`
+- [x] "Skip / didn't happen" → sets `Status = Skipped`, `Idea.Status = Backlog` (returns to backlog for replanning)
+- [x] Dashboard "Needs review" panel — shows activities awaiting review with quick link
+- [x] Dashboard: completed count stat card
+- [x] Nav: **Review** in sidebar
 
-### Phase 12 — Calendar & Export
+### ✅ Phase 12 — Calendar & Export
 Make every important date in the system visible and exportable.
 
-- [ ] `CalendarEvent` entity + migration (`Title`, `Date`, `EventType`, `Notes`, optional FKs to ActivityPlan / Goal / PlannedFlow)
-- [ ] Auto-create CalendarEvents when: an ActivityPlan gets a date, a Goal has a TargetDate, a PlannedFlow has a due date (e.g. tuition)
-- [ ] Calendar page — monthly grid view of all events; click to see detail
-- [ ] `.ics` export — single event download from any card that has a date
-- [ ] Google Calendar link — generates a `https://calendar.google.com/calendar/r/eventedit?...` pre-filled URL
-- [ ] "Add to calendar" button surfaces on: Upcoming Plans cards, Goal detail, PlannedTransaction due-date rows
-- [ ] Custom calendar event entry — freeform title, date, note (e.g. "Tuition due", "Car insurance renewal")
+- [x] Calendar page — monthly grid view of all events; click to see detail; month navigation
+- [x] `.ics` export (`AddToCalendarButton` component) — single event download
+- [x] Google Calendar link — pre-filled URL via `AddToCalendarButton`
+- [x] "Add to calendar" button surfaces on: Upcoming Plans cards, Activity detail page
+- [x] Goal TargetDates visible on Calendar — show goal milestones alongside activity plans
+- [x] Custom calendar event entry — freeform title, date, note (e.g. "Tuition due", "Car insurance renewal")
 
-### Phase 13 — Deep Integration: Budget ↔ Life Loop
+### ✅ Phase 13 — Deep Integration: Budget ↔ Life Loop
 Wire the financial layer and the life loop together so each reinforces the other.
 
-- [ ] Link a Goal to an Idea — when a Goal is created, optionally attach it to an Idea ("I'm saving for Santa Fe Weekend")
-  - Goal card on dashboard shows the linked idea title
-  - Idea detail shows funding progress from the linked goal
-- [ ] Link an ActivityPlan to a monthly PlannedTransaction — when scheduling an activity, optionally pick (or create) a budget line item for it
+- [x] Link a Goal to an Idea — when a Goal is created, optionally attach it to an Idea ("I'm saving for Santa Fe Weekend")
+  - Goal card shows the linked idea title
+  - Ideas list shows a funding badge when a goal is linked
+- [x] Link an ActivityPlan to a monthly PlannedTransaction — when scheduling an activity, optionally pick (or create) a budget line item for it
   - PlannedTransaction row in the monthly plan shows the activity name
   - Activity detail shows budget status (planned amount vs. actual spend)
-- [ ] When "Yes, I did it!" is completed with an actual amount, offer to log it as an ActualTransaction (pre-filled from/to accounts)
-- [ ] Cost estimate on Ideas (cheap/moderate/expensive) surfaces as a filter on the Surprise Me feature (Phase 14)
-- [ ] Dashboard redesign: lead with life loop stats (backlog size, upcoming this week, needs review), then financial summary below
+- [x] When "Yes, I did it!" is completed with an actual amount, offer to log it as an ActualTransaction (pre-filled from/to accounts)
+- [x] Cost estimate on Ideas (cheap/moderate/expensive) surfaces as a filter on the Surprise Me feature (Phase 14)
+- [x] Dashboard redesign: lead with life loop stats (backlog size, upcoming this week, needs review), then financial summary below
 
-### Phase 14 — Surprise Me!
+### ✅ Phase 14 — Surprise Me!
 Surface a random unplanned idea from the backlog to fight decision paralysis.
 
-- [ ] "Surprise Me!" button in nav (dice/shuffle icon)
-- [ ] Random selection weighted by: status = Backlog, optionally filtered by energy level or cost (user picks filters first, or pure random)
-- [ ] Result page: shows the idea card with "Plan This" and "Skip for now" CTAs
+- [x] "Surprise Me!" button in nav (dice/shuffle icon)
+- [x] Random selection weighted by: status = Backlog, optionally filtered by energy level or cost (user picks filters first, or pure random)
+- [x] Result page: shows the idea card with "Plan This" and "Skip for now" CTAs
 
-### Phase 15 — Polish & Production Readiness
-- [ ] Input validation across all new forms
-- [ ] Empty-state illustrations/prompts on Ideas, Upcoming Plans, Review pages
-- [ ] EF Core index review: `UserId`, `Status`, `PlannedDate` columns
-- [ ] Accessibility pass: focus management, ARIA labels, keyboard nav
-- [ ] Security review: all new service methods scope to UserId
+### ✅ Phase 15 — Polish & Production Readiness
+- [x] Input validation across all new forms
+- [x] Empty-state illustrations/prompts on Ideas, Upcoming Plans, Review pages
+- [x] EF Core index review: `UserId`, `Status`, `PlannedDate` columns
+- [x] Accessibility pass: focus management, ARIA labels, keyboard nav
+- [x] Security review: all new service methods scope to UserId
 
 ---
 

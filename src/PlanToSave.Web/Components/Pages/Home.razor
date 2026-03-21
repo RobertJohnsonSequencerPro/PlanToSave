@@ -23,7 +23,8 @@ else
     <h5 class="text-muted text-uppercase small fw-semibold mb-3">Your Life Plan</h5>
     <div class="row g-3 mb-3">
         <div class="col-4">
-            <div class="card h-100">
+            <a href="/ideas" class="text-decoration-none">
+            <div class="card h-100 @(BacklogCount > 0 ? "border-warning" : "")">
                 <div class="card-body text-center py-3">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-warning d-block mx-auto mb-1" viewBox="0 0 16 16">
                         <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z"/>
@@ -32,32 +33,37 @@ else
                     <div class="text-muted small">Ideas in backlog</div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-4">
-            <div class="card h-100">
+            <a href="/upcoming" class="text-decoration-none">
+            <div class="card h-100 @(ThisWeekCount > 0 ? "border-primary" : "")">
                 <div class="card-body text-center py-3">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-primary d-block mx-auto mb-1" viewBox="0 0 16 16">
-                        <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zM1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857V3.857z"/>
-                        <path d="M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
                     </svg>
-                    <div class="fs-3 fw-bold">@PlannedCount</div>
-                    <div class="text-muted small">Planned activities</div>
+                    <div class="fs-3 fw-bold">@ThisWeekCount</div>
+                    <div class="text-muted small">Coming up this week</div>
                 </div>
             </div>
+            </a>
         </div>
         <div class="col-4">
-            <div class="card h-100">
+            <a href="/review" class="text-decoration-none">
+            <div class="card h-100 @(NeedsReviewCount > 0 ? "border-danger" : "")">
                 <div class="card-body text-center py-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-success d-block mx-auto mb-1" viewBox="0 0 16 16">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="@(NeedsReviewCount > 0 ? "text-danger" : "text-success") d-block mx-auto mb-1" viewBox="0 0 16 16">
                         <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/>
                     </svg>
-                    <div class="fs-3 fw-bold">@DoneCount</div>
-                    <div class="text-muted small">Completed</div>
+                    <div class="fs-3 fw-bold">@NeedsReviewCount</div>
+                    <div class="text-muted small">@(NeedsReviewCount == 1 ? "Needs review" : "Need review")</div>
                 </div>
             </div>
+            </a>
         </div>
     </div>
-    <div class="mb-3 text-end">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="text-muted small">@DoneCount @(DoneCount == 1 ? "activity" : "activities") completed ✓</span>
         <a href="/ideas" class="text-muted small">Manage ideas →</a>
     </div>
 
@@ -136,6 +142,52 @@ else
     </div>
 
     <hr class="my-4" />
+
+    @* Active Goals (bridge between life loop and finances) *@
+    @if (activeGoals.Count > 0)
+    {
+        <h5 class="text-muted text-uppercase small fw-semibold mb-3">Savings Goals</h5>
+        <div class="row g-3 mb-4">
+            @foreach (var goal in activeGoals)
+            {
+                var pct = goal.TargetAmount > 0
+                    ? Math.Min(100, (int)Math.Round(goal.SavedAmount / goal.TargetAmount * 100))
+                    : 0;
+                var today = DateOnly.FromDateTime(DateTime.Today);
+                var daysLeft = goal.TargetDate.DayNumber - today.DayNumber;
+                var barClass = pct >= 100 ? "bg-success" : (daysLeft < 30 ? "bg-warning" : "bg-primary");
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-semibold">@goal.Name</span>
+                                <span class="text-muted small">@pct%</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(goal.IdeaTitle))
+                            {
+                                <div class="text-muted small mb-2">For: @goal.IdeaTitle</div>
+                            }
+                            <div class="progress mb-2" style="height:10px;">
+                                <div class="progress-bar @barClass" style="width:@pct%"
+                                     role="progressbar" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>@FormatCurrency(goal.SavedAmount) / @FormatCurrency(goal.TargetAmount)</span>
+                                <span class="@(daysLeft < 0 ? "text-danger" : daysLeft < 30 ? "text-warning" : "")">
+                                    @(daysLeft < 0 ? Math.Abs(daysLeft) + "d overdue" : daysLeft + "d left")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="mb-4 text-end">
+            <a href="/goals" class="text-muted small">View all goals →</a>
+        </div>
+    }
+
+    <h5 class="text-muted text-uppercase small fw-semibold mb-3">Finances</h5>
 
     @if (balances.Count == 0)
     {
@@ -236,41 +288,7 @@ else
     @* Active Goals *@
     @if (activeGoals.Count > 0)
     {
-        <h5 class="text-muted text-uppercase small fw-semibold mb-3">Active Goals</h5>
-        <div class="row g-3 mb-4">
-            @foreach (var goal in activeGoals)
-            {
-                var pct = goal.TargetAmount > 0
-                    ? Math.Min(100, (int)Math.Round(goal.SavedAmount / goal.TargetAmount * 100))
-                    : 0;
-                var today = DateOnly.FromDateTime(DateTime.Today);
-                var daysLeft = goal.TargetDate.DayNumber - today.DayNumber;
-                var barClass = pct >= 100 ? "bg-success" : (daysLeft < 30 ? "bg-warning" : "bg-primary");
-                <div class="col-sm-6 col-lg-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-semibold">@goal.Name</span>
-                                <span class="text-muted small">@pct%</span>
-                            </div>
-                            <div class="progress mb-2" style="height:10px;">
-                                <div class="progress-bar @barClass" style="width:@pct%"
-                                     role="progressbar" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                            <div class="d-flex justify-content-between text-muted small">
-                                <span>@FormatCurrency(goal.SavedAmount) / @FormatCurrency(goal.TargetAmount)</span>
-                                <span class="@(daysLeft < 0 ? "text-danger" : daysLeft < 30 ? "text-warning" : "")">
-                                    @(daysLeft < 0 ? Math.Abs(daysLeft) + "d overdue" : daysLeft + "d left")
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-        <div class="mb-4 text-end">
-            <a href="/goals" class="text-muted small">View all goals →</a>
-        </div>
+        @* Goals are now shown above the financial divider — placeholder to preserve original block *@
     }
 }
 
@@ -284,9 +302,17 @@ else
     private List<ActivityPlanDto> upcomingPlans = [];
     private MonthlyPlanDetailDto? currentPlan;
 
-    private int BacklogCount => allIdeas.Count(i => i.Status == IdeaStatus.Backlog);
-    private int PlannedCount => allIdeas.Count(i => i.Status == IdeaStatus.Planned);
-    private int DoneCount    => allIdeas.Count(i => i.Status == IdeaStatus.Done);
+    private int BacklogCount     => allIdeas.Count(i => i.Status == IdeaStatus.Backlog);
+    private int DoneCount        => allIdeas.Count(i => i.Status == IdeaStatus.Done);
+    private int ThisWeekCount    => upcomingPlans.Count(p =>
+        p.PlannedDate.HasValue
+        && p.PlannedDate.Value >= DateOnly.FromDateTime(DateTime.Today)
+        && p.PlannedDate.Value <= DateOnly.FromDateTime(DateTime.Today).AddDays(7)
+        && p.Status == ActivityPlanStatus.Upcoming);
+    private int NeedsReviewCount => upcomingPlans.Count(p =>
+        p.PlannedDate.HasValue
+        && p.PlannedDate.Value < DateOnly.FromDateTime(DateTime.Today)
+        && p.Status == ActivityPlanStatus.Upcoming);
 
     protected override async Task OnInitializedAsync()
     {

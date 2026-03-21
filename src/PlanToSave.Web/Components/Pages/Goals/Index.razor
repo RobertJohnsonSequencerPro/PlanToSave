@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject IGoalService GoalService
 @inject IAccountService AccountService
+@inject IIdeaService IdeaService
 @inject AuthenticationStateProvider AuthState
 
 <PageTitle>Goals</PageTitle>
@@ -60,6 +61,17 @@
                     <div class="col-md-2">
                         <label class="form-label">Target Date</label>
                         <InputDate @bind-Value="newGoal.TargetDate" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Saving toward an idea? <span class="text-muted small">(optional)</span></label>
+                        <InputSelect @bind-Value="newGoal.IdeaId" class="form-select">
+                            <option value="@Guid.Empty">— none —</option>
+                            @foreach (var idea in backlogIdeas)
+                            {
+                                <option value="@idea.Id">@idea.Title</option>
+                            }
+                        </InputSelect>
+                        <div class="form-text">Links this goal to a backlog idea so you can track progress together.</div>
                     </div>
                 </div>
                 <ValidationSummary class="text-danger mt-2" />
@@ -125,7 +137,16 @@ else
                             }
                             @goal.Name
                         </h5>
-                        @if (goal.Description is not null)
+                        @if (goal.IdeaTitle is not null)
+                        {
+                            <p class="text-muted small mb-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" class="me-1 text-warning" viewBox="0 0 16 16">
+                                    <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z"/>
+                                </svg>
+                                Saving for: <a href="/ideas" class="text-decoration-none">@goal.IdeaTitle</a>
+                            </p>
+                        }
+                        else if (goal.Description is not null)
                         {
                             <p class="text-muted small mb-0">@goal.Description</p>
                         }
@@ -192,6 +213,7 @@ else
 @code {
     private List<GoalDto>? goals;
     private List<AccountDto> stockAccounts = [];
+    private List<IdeaDto> backlogIdeas = [];
     private string userId = "";
     private bool showAddForm = false;
     private CreateGoalDto newGoal = new();
@@ -203,12 +225,11 @@ else
         var auth = await AuthState.GetAuthenticationStateAsync();
         userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
 
-        var goalsTask = GoalService.GetGoalsAsync(userId);
-        var accountsTask = AccountService.GetAccountsAsync(userId);
-        await Task.WhenAll(goalsTask, accountsTask);
-
-        goals = goalsTask.Result;
-        stockAccounts = accountsTask.Result.Where(a => a.IsStockAccount && !a.IsArchived).ToList();
+        goals         = await GoalService.GetGoalsAsync(userId);
+        var accounts  = await AccountService.GetAccountsAsync(userId);
+        stockAccounts = accounts.Where(a => a.IsStockAccount && !a.IsArchived).ToList();
+        backlogIdeas  = await IdeaService.GetIdeasAsync(userId,
+            new IdeaFilterDto { Status = IdeaStatus.Backlog });
     }
 
     private void ToggleAddForm()
@@ -226,6 +247,11 @@ else
         if (newGoal.TargetAccountId == Guid.Empty || newGoal.SourceAccountId == Guid.Empty)
         {
             formError = "Please select both Target and Source accounts.";
+            return;
+        }
+        if (newGoal.TargetDate <= newGoal.StartDate)
+        {
+            formError = "Target date must be after start date.";
             return;
         }
         try

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PlanToSave.Application.Accounts;
 using PlanToSave.Application.Flows;
 using PlanToSave.Application.Activities;
+using PlanToSave.Application.Calendar;
 using PlanToSave.Application.Goals;
 using PlanToSave.Application.Ideas;
 using PlanToSave.Application.Plans;
@@ -88,6 +89,7 @@ builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IActivityPlanService, ActivityPlanService>();
 builder.Services.AddScoped<IActivityReviewService, ActivityReviewService>();
+builder.Services.AddScoped<ICalendarEventService, CalendarEventService>();
 
 var app = builder.Build();
 

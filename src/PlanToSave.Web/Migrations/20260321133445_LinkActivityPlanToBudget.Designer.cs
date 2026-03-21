@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlanToSave.Web.Data;
@@ -11,9 +12,11 @@ using PlanToSave.Web.Data;
 namespace PlanToSave.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260321133445_LinkActivityPlanToBudget")]
+    partial class LinkActivityPlanToBudget
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -235,7 +238,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("PlannedFlowId");
 
-                    b.HasIndex("UserId", "Status");
+                    b.HasIndex("UserId");
 
                     b.ToTable("ActivityPlans", "plantosave");
                 });
@@ -336,13 +339,15 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Date");
+
                     b.HasIndex("FromAccountId");
 
                     b.HasIndex("PlannedFlowId");
 
                     b.HasIndex("ToAccountId");
 
-                    b.HasIndex("UserId", "Date");
+                    b.HasIndex("UserId");
 
                     b.ToTable("ActualFlows", "plantosave");
                 });

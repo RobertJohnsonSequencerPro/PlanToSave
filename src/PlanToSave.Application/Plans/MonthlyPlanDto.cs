@@ -22,7 +22,9 @@ public record PlannedFlowDto(
     AccountType ToAccountType,
     decimal PlannedAmount,
     decimal ActualAmount,
-    string? Description);
+    string? Description,
+    Guid? ActivityPlanId = null,
+    string? ActivityTitle = null);
 
 public record MonthlyPlanDetailDto(
     Guid Id,

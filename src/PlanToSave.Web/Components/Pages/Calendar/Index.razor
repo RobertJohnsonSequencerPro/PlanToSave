@@ -1,6 +1,8 @@
 @page "/calendar"
 @attribute [Authorize]
 @inject IActivityPlanService ActivityPlanService
+@inject IGoalService GoalService
+@inject ICalendarEventService CalendarEventService
 @inject AuthenticationStateProvider AuthState
 
 <PageTitle>Calendar — PlanToSave</PageTitle>
@@ -33,40 +35,100 @@ else
 {
     @* Calendar cells *@
     <div class="cal-grid">
-        @foreach (var dayNum in calendarCells)
-        {
-            var evs = dayNum > 0 && eventsByDay.ContainsKey(dayNum) ? eventsByDay[dayNum] : [];
-            bool isToday = dayNum > 0 && dayNum == todayDay && year == todayYear && month == todayMonth;
-            bool isSelected = dayNum > 0 && dayNum == selectedDay;
+                        @foreach (var dayNum in calendarCells)
+            {
+                var evs        = dayNum > 0 && eventsByDay.ContainsKey(dayNum)  ? eventsByDay[dayNum]  : [];
+                var goalEvs    = dayNum > 0 && goalsByDay.ContainsKey(dayNum)   ? goalsByDay[dayNum]   : [];
+                var customEvs  = dayNum > 0 && customByDay.ContainsKey(dayNum)  ? customByDay[dayNum]  : [];
+                bool isToday = dayNum > 0 && dayNum == todayDay && year == todayYear && month == todayMonth;
+                bool isSelected = dayNum > 0 && dayNum == selectedDay;
+                int shownCount = Math.Min(evs.Count, 2) + Math.Min(goalEvs.Count, 1) + Math.Min(customEvs.Count, 1);
+                int totalCount = evs.Count + goalEvs.Count + customEvs.Count;
 
-            <div class="cal-cell @(dayNum == 0 ? "cal-empty" : "") @(isToday ? "cal-today" : "") @(isSelected ? "cal-selected" : "")"
-                 @onclick="() => SelectDay(dayNum)">
-                @if (dayNum > 0)
-                {
-                    <span class="cal-day-num @(isToday ? "text-primary" : "")">@dayNum</span>
-                    @foreach (var ev in evs.Take(3))
+                <div class="cal-cell @(dayNum == 0 ? "cal-empty" : "") @(isToday ? "cal-today" : "") @(isSelected ? "cal-selected" : "")"
+                     @onclick="() => SelectDay(dayNum)">
+                    @if (dayNum > 0)
                     {
-                        <div class="cal-event @GetStatusClass(ev.Status)">@ev.IdeaTitle</div>
+                        <span class="cal-day-num @(isToday ? "text-primary" : "")">@dayNum</span>
+                        @foreach (var ev in evs.Take(2))
+                        {
+                            <div class="cal-event @GetStatusClass(ev.Status)">@ev.IdeaTitle</div>
+                        }
+                        @foreach (var g in goalEvs.Take(1))
+                        {
+                            <div class="cal-event cal-event-goal">🎯 @g.Name</div>
+                        }
+                        @foreach (var ce in customEvs.Take(1))
+                        {
+                            <div class="cal-event cal-event-custom">📌 @ce.Title</div>
+                        }
+                        @if (totalCount > shownCount)
+                        {
+                            <div class="cal-more">+@(totalCount - shownCount) more</div>
+                        }
                     }
-                    @if (evs.Count > 3)
-                    {
-                        <div class="cal-more">+@(evs.Count - 3) more</div>
-                    }
-                }
-            </div>
-        }
+                </div>
+            }
     </div>
 
-    @* Selected-day detail panel *@
-    @if (selectedDay > 0 && eventsByDay.TryGetValue(selectedDay, out var selectedEvents))
+    @if (selectedDay > 0)
     {
-        var selectedDate = new DateOnly(year, month, selectedDay);
+        var selectedDate   = new DateOnly(year, month, selectedDay);
+        var selectedEvents = eventsByDay.TryGetValue(selectedDay, out var ae) ? ae : [];
+        var selectedGoals  = goalsByDay.TryGetValue(selectedDay, out var ag)  ? ag : [];
+        var selectedCustom = customByDay.TryGetValue(selectedDay, out var ac)  ? ac : [];
         <div class="card mt-4 border-primary">
             <div class="card-header d-flex justify-content-between align-items-center py-2">
                 <span class="fw-semibold">@selectedDate.ToString("dddd, MMMM d, yyyy")</span>
-                <button type="button" class="btn-close btn-sm" @onclick="() => selectedDay = 0"
-                        aria-label="Close"></button>
+                <div class="d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-primary btn-sm" @onclick="ToggleAddForm">
+                        @(showAddForm ? "✕ Cancel" : "+ Add event")
+                    </button>
+                    <button type="button" class="btn-close btn-sm" @onclick="() => selectedDay = 0"
+                            aria-label="Close"></button>
+                </div>
             </div>
+
+            @if (showAddForm)
+            {
+                <div class="card-body border-bottom pb-3">
+                    <EditForm Model="addEventForm" OnValidSubmit="SubmitAddEvent">
+                        <DataAnnotationsValidator />
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm">
+                                <label class="form-label fw-semibold mb-1 small">Title</label>
+                                <InputText @bind-Value="addEventForm.Title" class="form-control form-control-sm"
+                                           placeholder="e.g. Tuition due, Car insurance renewal" />
+                                <ValidationMessage For="() => addEventForm.Title" class="text-danger small" />
+                            </div>
+                            <div class="col-sm-auto">
+                                <label class="form-label fw-semibold mb-1 small">Date</label>
+                                <InputDate @bind-Value="addEventForm.Date" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-sm">
+                                <label class="form-label fw-semibold mb-1 small">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                                <InputText @bind-Value="addEventForm.Notes" class="form-control form-control-sm"
+                                           placeholder="Optional note" />
+                            </div>
+                            <div class="col-sm-auto">
+                                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                            </div>
+                        </div>
+                        @if (addEventError is not null)
+                        {
+                            <div class="alert alert-danger py-1 small mt-2">@addEventError</div>
+                        }
+                    </EditForm>
+                </div>
+            }
+
+            @if (selectedEvents.Count == 0 && selectedGoals.Count == 0 && selectedCustom.Count == 0 && !showAddForm)
+            {
+                <div class="card-body text-center text-muted small py-3">
+                    Nothing scheduled on @selectedDate.ToString("MMMM d"). Click "+ Add event" to note something.
+                </div>
+            }
+
             <ul class="list-group list-group-flush">
                 @foreach (var ev in selectedEvents)
                 {
@@ -82,25 +144,58 @@ else
                         <AddToCalendarButton Title="@ev.IdeaTitle" Date="@ev.PlannedDate" Notes="@ev.Notes" />
                     </li>
                 }
+                @foreach (var g in selectedGoals)
+                {
+                    var pct = g.TargetAmount > 0
+                        ? Math.Min(100, (int)Math.Round(g.SavedAmount / g.TargetAmount * 100))
+                        : 0;
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+                        <div>
+                            <span class="badge bg-warning text-dark me-2">🎯 Goal</span>
+                            <a href="/goals" class="fw-semibold text-decoration-none">@g.Name</a>
+                            <div class="text-muted small mt-1">@g.SavedAmount.ToString("C") of @g.TargetAmount.ToString("C") (@pct%)</div>
+                        </div>
+                        <AddToCalendarButton Title="@($"Goal: {g.Name}")" Date="@g.TargetDate" Notes="@g.Description" />
+                    </li>
+                }
+                @foreach (var ce in selectedCustom)
+                {
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+                        <div>
+                            <span class="badge bg-info text-dark me-2">📌 Note</span>
+                            <span class="fw-semibold">@ce.Title</span>
+                            @if (!string.IsNullOrWhiteSpace(ce.Notes))
+                            {
+                                <div class="text-muted small mt-1">@ce.Notes</div>
+                            }
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <AddToCalendarButton Title="@ce.Title" Date="@ce.Date" Notes="@ce.Notes" />
+                            <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteCustomEvent(ce.Id)"
+                                    title="Delete event">&#128465;</button>
+                        </div>
+                    </li>
+                }
             </ul>
-        </div>
-    }
-    else if (selectedDay > 0)
-    {
-        var emptyLabel = new DateOnly(year, month, selectedDay).ToString("MMMM d");
-        <div class="card mt-4 text-center py-3 text-muted small">
-            Nothing scheduled on @emptyLabel.
         </div>
     }
 }
 
 @code {
     private List<ActivityPlanDto>? plans;
+    private List<GoalDto> goalsAll = [];
+    private List<CalendarEventDto> customEvents = [];
     private string userId = "";
 
     private int year, month, selectedDay;
     private List<int> calendarCells = [];
     private Dictionary<int, List<ActivityPlanDto>> eventsByDay = new();
+    private Dictionary<int, List<GoalDto>> goalsByDay = new();
+    private Dictionary<int, List<CalendarEventDto>> customByDay = new();
+
+    private bool showAddForm;
+    private CreateCalendarEventDto addEventForm = new();
+    private string? addEventError;
 
     private static readonly int todayYear = DateTime.Today.Year;
     private static readonly int todayMonth = DateTime.Today.Month;
@@ -119,15 +214,28 @@ else
 
     private async Task LoadMonth()
     {
-        plans = await ActivityPlanService.GetPlansForMonthAsync(userId, year, month);
+        plans        = await ActivityPlanService.GetPlansForMonthAsync(userId, year, month);
+        goalsAll     = await GoalService.GetGoalsAsync(userId);
+        customEvents = await CalendarEventService.GetForMonthAsync(userId, year, month);
         BuildGrid();
     }
 
     private void BuildGrid()
     {
         selectedDay = 0;
+        showAddForm = false;
         eventsByDay = plans!
+            .Where(p => p.PlannedDate.HasValue)
             .GroupBy(p => p.PlannedDate!.Value.Day)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        goalsByDay = goalsAll
+            .Where(g => !g.IsComplete && g.TargetDate.Year == year && g.TargetDate.Month == month)
+            .GroupBy(g => g.TargetDate.Day)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        customByDay = customEvents
+            .GroupBy(e => e.Date.Day)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         int startOffset = (int)new DateTime(year, month, 1).DayOfWeek;
@@ -142,7 +250,54 @@ else
     private void SelectDay(int day)
     {
         if (day == 0) return;
-        selectedDay = selectedDay == day ? 0 : day; // toggle off if same day
+        if (selectedDay == day)
+        {
+            selectedDay = 0;
+            showAddForm = false;
+        }
+        else
+        {
+            selectedDay  = day;
+            showAddForm  = false;
+            addEventForm = new CreateCalendarEventDto { Date = new DateOnly(year, month, day) };
+            addEventError = null;
+        }
+    }
+
+    private void ToggleAddForm()
+    {
+        showAddForm   = !showAddForm;
+        addEventError = null;
+        if (showAddForm)
+            addEventForm = new CreateCalendarEventDto { Date = new DateOnly(year, month, selectedDay) };
+    }
+
+    private async Task SubmitAddEvent()
+    {
+        try
+        {
+            await CalendarEventService.CreateAsync(userId, addEventForm);
+            showAddForm  = false;
+            addEventError = null;
+            await LoadMonth();
+            selectedDay = addEventForm.Date.Day;
+        }
+        catch (Exception ex)
+        {
+            addEventError = ex.Message;
+        }
+    }
+
+    private async Task DeleteCustomEvent(Guid id)
+    {
+        try
+        {
+            await CalendarEventService.DeleteAsync(userId, id);
+            var day = selectedDay;
+            await LoadMonth();
+            selectedDay = day;
+        }
+        catch { /* ignore */ }
     }
 
     private async Task PrevMonth()

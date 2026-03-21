@@ -23,13 +23,19 @@ public class ActivityPlanService(ApplicationDbContext db) : IActivityPlanService
         p.Steps
             .OrderBy(s => s.SortOrder)
             .Select(s => new ActivityStepDto(s.Id, s.Title, s.SortOrder, s.IsComplete, s.CompletedAt))
-            .ToList());
+            .ToList(),
+        p.PlannedFlowId,
+        p.PlannedFlow?.Amount,
+        p.PlannedFlow?.Description,
+        p.PlannedFlow?.MonthlyPlan?.Year,
+        p.PlannedFlow?.MonthlyPlan?.Month);
 
     public async Task<List<ActivityPlanDto>> GetPlansAsync(string userId)
     {
         var plans = await db.ActivityPlans
             .Include(p => p.Idea)
             .Include(p => p.Steps)
+            .Include(p => p.PlannedFlow).ThenInclude(pf => pf!.MonthlyPlan)
             .Where(p => p.UserId == userId && p.Status == ActivityPlanStatus.Upcoming)
             .ToListAsync();
 
@@ -45,6 +51,7 @@ public class ActivityPlanService(ApplicationDbContext db) : IActivityPlanService
         var plans = await db.ActivityPlans
             .Include(p => p.Idea)
             .Include(p => p.Steps)
+            .Include(p => p.PlannedFlow).ThenInclude(pf => pf!.MonthlyPlan)
             .Where(p => p.UserId == userId
                      && p.PlannedDate.HasValue
                      && p.PlannedDate.Value.Year == year
@@ -60,6 +67,7 @@ public class ActivityPlanService(ApplicationDbContext db) : IActivityPlanService
         var plan = await db.ActivityPlans
             .Include(p => p.Idea)
             .Include(p => p.Steps)
+            .Include(p => p.PlannedFlow).ThenInclude(pf => pf!.MonthlyPlan)
             .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
 
         return plan is null ? null : ToDto(plan);
@@ -154,6 +162,26 @@ public class ActivityPlanService(ApplicationDbContext db) : IActivityPlanService
             ?? throw new InvalidOperationException("Step not found.");
 
         db.ActivitySteps.Remove(step);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task LinkBudgetAsync(string userId, Guid planId, Guid? plannedFlowId)
+    {
+        var plan = await db.ActivityPlans
+            .FirstOrDefaultAsync(p => p.Id == planId && p.UserId == userId)
+            ?? throw new InvalidOperationException("Plan not found.");
+
+        if (plannedFlowId.HasValue)
+        {
+            // Verify the planned flow belongs to this user (via its monthly plan)
+            var exists = await db.PlannedFlows
+                .Include(pf => pf.MonthlyPlan)
+                .AnyAsync(pf => pf.Id == plannedFlowId.Value && pf.MonthlyPlan.UserId == userId);
+            if (!exists)
+                throw new InvalidOperationException("Budget line not found.");
+        }
+
+        plan.PlannedFlowId = plannedFlowId;
         await db.SaveChangesAsync();
     }
 }

@@ -12,6 +12,7 @@ public class GoalService(ApplicationDbContext db) : IGoalService
         var goals = await db.Goals
             .Include(g => g.TargetAccount)
             .Include(g => g.SourceAccount)
+            .Include(g => g.Idea)
             .Where(g => g.UserId == userId)
             .OrderBy(g => g.IsComplete)
             .ThenBy(g => g.TargetDate)
@@ -38,6 +39,8 @@ public class GoalService(ApplicationDbContext db) : IGoalService
             g.StartDate,
             g.TargetDate,
             g.IsComplete,
+            g.IdeaId,
+            g.Idea?.Title,
             g.CreatedAt)).ToList();
     }
 
@@ -54,6 +57,12 @@ public class GoalService(ApplicationDbContext db) : IGoalService
         if (dto.TargetDate <= dto.StartDate)
             throw new InvalidOperationException("Target date must be after start date.");
 
+        if (dto.IdeaId.HasValue && dto.IdeaId.Value != Guid.Empty)
+        {
+            var idea = await db.Ideas.AnyAsync(i => i.Id == dto.IdeaId.Value && i.UserId == userId);
+            if (!idea) throw new InvalidOperationException("Idea not found.");
+        }
+
         var goal = new Goal
         {
             Id = Guid.NewGuid(),
@@ -65,6 +74,7 @@ public class GoalService(ApplicationDbContext db) : IGoalService
             TargetAmount = dto.TargetAmount,
             StartDate = dto.StartDate,
             TargetDate = dto.TargetDate,
+            IdeaId = dto.IdeaId == Guid.Empty ? null : dto.IdeaId,
             IsComplete = false,
             CreatedAt = DateTime.UtcNow
         };

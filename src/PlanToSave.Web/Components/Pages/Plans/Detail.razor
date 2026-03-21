@@ -88,7 +88,7 @@ else
     {
         <div class="alert alert-info alert-dismissible py-2">
             @seedMessage
-            <button type="button" class="btn-close" @onclick="() => seedMessage = null"></button>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => seedMessage = null"></button>
         </div>
     }
 
@@ -101,8 +101,8 @@ else
                     <DataAnnotationsValidator />
                     <div class="row g-2">
                         <div class="col-md-4">
-                            <label class="form-label">From Account</label>
-                            <InputSelect @bind-Value="newFlow.FromAccountId" class="form-select">
+                            <label class="form-label" for="fromAccountSelect">From Account</label>
+                            <InputSelect id="fromAccountSelect" @bind-Value="newFlow.FromAccountId" class="form-select">
                                 <option value="@Guid.Empty">— select —</option>
                                 @foreach (var group in fromOptions.GroupBy(a => a.Type))
                                 {
@@ -116,8 +116,8 @@ else
                             </InputSelect>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">To Account</label>
-                            <InputSelect @bind-Value="newFlow.ToAccountId" class="form-select">
+                            <label class="form-label" for="toAccountSelect">To Account</label>
+                            <InputSelect id="toAccountSelect" @bind-Value="newFlow.ToAccountId" class="form-select">
                                 <option value="@Guid.Empty">— select —</option>
                                 @foreach (var group in toOptions.GroupBy(a => a.Type))
                                 {
@@ -189,12 +189,23 @@ else
                                 <span class="badge @GetTypeBadgeClass(pf.ToAccountType) me-1">@pf.ToAccountType</span>
                                 @pf.ToAccountName
                             </td>
-                            <td class="text-muted small">@(pf.Description ?? "—")</td>
+                            <td class="text-muted small">
+                                @(pf.Description ?? "—")
+                                @if (!string.IsNullOrWhiteSpace(pf.ActivityTitle))
+                                {
+                                    <div class="small text-primary mt-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                                        </svg>
+                                        <a href="/upcoming/@pf.ActivityPlanId" class="text-decoration-none">@pf.ActivityTitle</a>
+                                    </div>
+                                }
+                            </td>
                             <td class="text-end">@pf.PlannedAmount.ToString("C")</td>
                             <td class="text-end">@pf.ActualAmount.ToString("C")</td>
                             <td class="text-end @pfVarClass fw-semibold">@(pfVarSign + pfVariance.ToString("C"))</td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-danger"
+                                <button class="btn btn-sm btn-outline-danger" aria-label="Delete transaction"
                                         @onclick="() => DeletePlannedFlow(pf.Id)">
                                     ×
                                 </button>

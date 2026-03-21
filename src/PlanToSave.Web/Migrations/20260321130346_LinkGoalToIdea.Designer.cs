@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlanToSave.Web.Data;
@@ -11,9 +12,11 @@ using PlanToSave.Web.Data;
 namespace PlanToSave.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260321130346_LinkGoalToIdea")]
+    partial class LinkGoalToIdea
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -216,9 +219,6 @@ namespace PlanToSave.Web.Migrations
                     b.Property<DateOnly?>("PlannedDate")
                         .HasColumnType("date");
 
-                    b.Property<Guid?>("PlannedFlowId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -233,9 +233,7 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasIndex("PlannedDate");
 
-                    b.HasIndex("PlannedFlowId");
-
-                    b.HasIndex("UserId", "Status");
+                    b.HasIndex("UserId");
 
                     b.ToTable("ActivityPlans", "plantosave");
                 });
@@ -336,13 +334,15 @@ namespace PlanToSave.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Date");
+
                     b.HasIndex("FromAccountId");
 
                     b.HasIndex("PlannedFlowId");
 
                     b.HasIndex("ToAccountId");
 
-                    b.HasIndex("UserId", "Date");
+                    b.HasIndex("UserId");
 
                     b.ToTable("ActualFlows", "plantosave");
                 });
@@ -385,38 +385,6 @@ namespace PlanToSave.Web.Migrations
                     b.HasIndex("UserId", "AccountId");
 
                     b.ToTable("BalanceSnapshots", "plantosave");
-                });
-
-            modelBuilder.Entity("PlanToSave.Domain.Entities.CalendarEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "Date");
-
-                    b.ToTable("CalendarEvents", "plantosave");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.FlowTemplate", b =>
@@ -820,11 +788,6 @@ namespace PlanToSave.Web.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PlanToSave.Domain.Entities.PlannedFlow", "PlannedFlow")
-                        .WithMany()
-                        .HasForeignKey("PlannedFlowId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("PlanToSave.Web.Data.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -832,8 +795,6 @@ namespace PlanToSave.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Idea");
-
-                    b.Navigation("PlannedFlow");
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.ActivityReview", b =>
@@ -905,15 +866,6 @@ namespace PlanToSave.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Account");
-                });
-
-            modelBuilder.Entity("PlanToSave.Domain.Entities.CalendarEvent", b =>
-                {
-                    b.HasOne("PlanToSave.Web.Data.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PlanToSave.Domain.Entities.FlowTemplate", b =>

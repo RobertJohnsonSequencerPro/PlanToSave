@@ -183,18 +183,32 @@ public class MonthlyPlanService(ApplicationDbContext db) : IMonthlyPlanService
             .Select(f => new { f.FromAccountId, f.ToAccountId, f.Amount })
             .ToListAsync();
 
+        // Load any ActivityPlans linked to this plan's PlannedFlows
+        var planFlowIds = plan.PlannedFlows.Select(pf => pf.Id).ToList();
+        var linkedActivities = await db.ActivityPlans
+            .Include(p => p.Idea)
+            .Where(p => p.UserId == userId
+                && p.PlannedFlowId.HasValue && planFlowIds.Contains(p.PlannedFlowId.Value))
+            .Select(p => new { p.PlannedFlowId, p.Id, p.Idea.Title })
+            .ToListAsync();
+        var activityByFlowId = linkedActivities.ToDictionary(a => a.PlannedFlowId!.Value);
+
         var plannedFlows = plan.PlannedFlows.Select(pf =>
         {
             var actual = actuals
                 .Where(a => a.FromAccountId == pf.FromAccountId && a.ToAccountId == pf.ToAccountId)
                 .Sum(a => a.Amount);
 
+            activityByFlowId.TryGetValue(pf.Id, out var linked);
+
             return new PlannedFlowDto(
                 pf.Id,
                 pf.FromAccountId, pf.FromAccount.Name, pf.FromAccount.Type,
                 pf.ToAccountId, pf.ToAccount.Name, pf.ToAccount.Type,
                 pf.Amount, actual,
-                pf.Description);
+                pf.Description,
+                linked?.Id,
+                linked?.Title);
         }).ToList();
 
         return new MonthlyPlanDetailDto(plan.Id, year, month, plan.Status, plannedFlows);

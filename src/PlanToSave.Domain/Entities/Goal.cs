@@ -14,9 +14,12 @@ public class Goal
     /// <summary>The account contributions are drawn from each month.</summary>
     public Guid SourceAccountId { get; set; }
     public bool IsComplete { get; set; }
+    /// <summary>Optional: the Idea this goal is saving toward.</summary>
+    public Guid? IdeaId { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public Account TargetAccount { get; set; } = null!;
     public Account SourceAccount { get; set; } = null!;
+    public Idea? Idea { get; set; }
     public ICollection<PlannedFlow> ContributionFlows { get; set; } = new List<PlannedFlow>();
 }

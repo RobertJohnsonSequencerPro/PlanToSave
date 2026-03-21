@@ -1,6 +1,7 @@
 @page "/upcoming/{Id:guid}"
 @attribute [Authorize]
 @inject IActivityPlanService ActivityPlanService
+@inject IMonthlyPlanService PlanService
 @inject AuthenticationStateProvider AuthState
 @inject NavigationManager Nav
 
@@ -59,6 +60,122 @@ else
         </div>
     }
 
+    @* Budget section *@
+    <div class="card mb-4">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Budget</span>
+            @if (plan.PlannedFlowId.HasValue)
+            {
+                <button class="btn btn-sm btn-outline-secondary" @onclick="UnlinkBudget">Unlink</button>
+            }
+        </div>
+        @if (plan.PlannedFlowId.HasValue)
+        {
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <div>
+                        <span class="text-muted small">Planned:</span>
+                        <span class="fw-semibold ms-1">@plan.BudgetAmount?.ToString("C")</span>
+                        @if (!string.IsNullOrWhiteSpace(plan.BudgetDescription))
+                        {
+                            <span class="text-muted small ms-2">(@plan.BudgetDescription)</span>
+                        }
+                    </div>
+                    @if (linkedActualAmount.HasValue)
+                    {
+                        <div>
+                            <span class="text-muted small">Actual:</span>
+                            <span class="fw-semibold ms-1 @(linkedActualAmount.Value <= (plan.BudgetAmount ?? 0) ? "text-success" : "text-danger")">
+                                @linkedActualAmount.Value.ToString("C")
+                            </span>
+                        </div>
+                    }
+                    @if (plan.BudgetYear.HasValue && plan.BudgetMonth.HasValue)
+                    {
+                        <a href="/plans/@plan.BudgetYear/@plan.BudgetMonth" class="btn btn-sm btn-outline-primary">
+                            View @(new DateTime(plan.BudgetYear.Value, plan.BudgetMonth.Value, 1).ToString("MMMM yyyy")) plan
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card-body py-2">
+                @if (!showBudgetPicker)
+                {
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => showBudgetPicker = true">
+                        + Link to a budget line
+                    </button>
+                }
+                else
+                {
+                    <div>
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-auto">
+                                <label class="form-label form-label-sm mb-1">Year</label>
+                                <input type="number" class="form-control form-control-sm" style="width:90px"
+                                       @bind="budgetPickerYear" min="2020" max="2099" />
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label form-label-sm mb-1">Month</label>
+                                <select class="form-select form-select-sm" style="width:130px" @bind="budgetPickerMonth">
+                                    @foreach (var m in Enumerable.Range(1, 12))
+                                    {
+                                        <option value="@m">@(new DateTime(2000, m, 1).ToString("MMMM"))</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-secondary" @onclick="LoadBudgetPickerFlows"
+                                        disabled="@loadingBudgetFlows">
+                                    @(loadingBudgetFlows ? "Loading…" : "Load flows")
+                                </button>
+                            </div>
+                        </div>
+                        @if (budgetPickerPlan is not null)
+                        {
+                            @if (budgetPickerPlan.PlannedFlows.Count == 0)
+                            {
+                                <p class="text-muted small mb-2">No planned transactions exist for that month.</p>
+                            }
+                            else
+                            {
+                                <div class="row g-2 align-items-end mb-2">
+                                    <div class="col-auto">
+                                        <label class="form-label form-label-sm mb-1">Budget line</label>
+                                        <select class="form-select form-select-sm" @bind="budgetPickerFlowId">
+                                            <option value="@Guid.Empty">— select —</option>
+                                            @foreach (var pf in budgetPickerPlan.PlannedFlows)
+                                            {
+                                                var label = $"{pf.FromAccountName} → {pf.ToAccountName}  {pf.PlannedAmount:C}" +
+                                                            (pf.Description is not null ? $"  ({pf.Description})" : "");
+                                                <option value="@pf.Id">@label</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-primary" @onclick="LinkBudget"
+                                                disabled="@(budgetPickerFlowId == Guid.Empty)">
+                                            Link
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        @if (budgetError is not null)
+                        {
+                            <div class="text-danger small mt-1">@budgetError</div>
+                        }
+                        <button class="btn btn-sm btn-link p-0 text-muted" @onclick="() => { showBudgetPicker = false; budgetError = null; }">
+                            Cancel
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
     @* Progress summary *@
     int pct = plan.TotalSteps > 0 ? (int)Math.Round((double)plan.CompletedSteps / plan.TotalSteps * 100) : 0;
     string progressClass = pct >= 100 ? "bg-success" : "bg-primary";
@@ -97,7 +214,7 @@ else
                             @step.Title
                         </span>
                         <button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
-                                @onclick="() => DeleteStep(step.Id)" title="Remove step">
+                                @onclick="() => DeleteStep(step.Id)" title="Remove step" aria-label="Remove step">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
                             </svg>
@@ -133,11 +250,80 @@ else
     private string newStepTitle = "";
     private string? stepError;
 
+    // Budget linking state
+    private bool showBudgetPicker;
+    private int budgetPickerYear;
+    private int budgetPickerMonth;
+    private MonthlyPlanDetailDto? budgetPickerPlan;
+    private Guid budgetPickerFlowId = Guid.Empty;
+    private bool loadingBudgetFlows;
+    private string? budgetError;
+    private decimal? linkedActualAmount;
+
     protected override async Task OnInitializedAsync()
     {
         var auth = await AuthState.GetAuthenticationStateAsync();
         userId = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
         plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+
+        // Default budget picker to the activity's planned month (or today)
+        var refDate = plan?.PlannedDate?.ToDateTime(TimeOnly.MinValue) ?? DateTime.Today;
+        budgetPickerYear = refDate.Year;
+        budgetPickerMonth = refDate.Month;
+
+        // If already linked, load the actual spend from the monthly plan
+        if (plan?.PlannedFlowId.HasValue == true && plan.BudgetYear.HasValue && plan.BudgetMonth.HasValue)
+        {
+            var monthPlan = await PlanService.GetPlanDetailAsync(userId, plan.BudgetYear.Value, plan.BudgetMonth.Value);
+            var linkedFlow = monthPlan?.PlannedFlows.FirstOrDefault(pf => pf.Id == plan.PlannedFlowId);
+            linkedActualAmount = linkedFlow?.ActualAmount;
+        }
+    }
+
+    private async Task LoadBudgetPickerFlows()
+    {
+        loadingBudgetFlows = true;
+        budgetPickerPlan = null;
+        budgetPickerFlowId = Guid.Empty;
+        budgetError = null;
+        try
+        {
+            budgetPickerPlan = await PlanService.GetPlanDetailAsync(userId, budgetPickerYear, budgetPickerMonth);
+        }
+        finally
+        {
+            loadingBudgetFlows = false;
+        }
+    }
+
+    private async Task LinkBudget()
+    {
+        if (budgetPickerFlowId == Guid.Empty) return;
+        budgetError = null;
+        try
+        {
+            await ActivityPlanService.LinkBudgetAsync(userId, Id, budgetPickerFlowId);
+            plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+            showBudgetPicker = false;
+            budgetPickerPlan = null;
+            if (plan?.BudgetYear.HasValue == true && plan.BudgetMonth.HasValue)
+            {
+                var monthPlan = await PlanService.GetPlanDetailAsync(userId, plan.BudgetYear.Value, plan.BudgetMonth.Value);
+                var linkedFlow = monthPlan?.PlannedFlows.FirstOrDefault(pf => pf.Id == plan.PlannedFlowId);
+                linkedActualAmount = linkedFlow?.ActualAmount;
+            }
+        }
+        catch (Exception ex)
+        {
+            budgetError = ex.Message;
+        }
+    }
+
+    private async Task UnlinkBudget()
+    {
+        await ActivityPlanService.LinkBudgetAsync(userId, Id, null);
+        plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+        linkedActualAmount = null;
     }
 
     private async Task AddStep()

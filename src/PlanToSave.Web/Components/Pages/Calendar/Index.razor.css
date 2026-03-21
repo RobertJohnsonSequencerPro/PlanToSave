@@ -86,6 +86,16 @@
     color: #41464b;
 }
 
+.cal-event-goal {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.cal-event-custom {
+    background-color: #e0f2fe;
+    color: #0c4a6e;
+}
+
 .cal-more {
     font-size: 0.6rem;
     color: #6c757d;

@@ -154,13 +154,21 @@ else if (ideas.Count == 0)
         <div class="card-body text-muted">
             @if (HasActiveFilter)
             {
-                <p class="mb-1">No ideas match those filters.</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="mb-3 text-muted" viewBox="0 0 16 16">
+                    <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+                <p class="mb-1 fw-semibold">No ideas match those filters.</p>
+                <p class="mb-2 small">Try broadening your search or clearing the filters.</p>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="ClearFilter">Clear filters</button>
             }
             else
             {
-                <p class="mb-2">No ideas yet — add some first!</p>
-                <button class="btn btn-sm btn-primary" @onclick="ToggleAddForm">+ Add your first idea</button>
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="mb-3 text-primary" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                </svg>
+                <h5 class="fw-semibold mb-1">Your idea backlog is empty</h5>
+                <p class="mb-3 small">This is where you collect activities and experiences you want to have — restaurants to try, trips to take, skills to learn. Start dreaming!</p>
+                <button class="btn btn-primary" @onclick="ToggleAddForm">+ Add your first idea</button>
             }
         </div>
     </div>
@@ -205,7 +213,7 @@ else
                                     Plan This
                                 </button>
                             }
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteIdea(idea.Id)" title="Delete">
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteIdea(idea.Id)" title="Delete" aria-label="Delete idea">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
                                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
                                     <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>

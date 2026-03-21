@@ -1,6 +1,7 @@
 @page "/review"
 @attribute [Authorize]
 @inject IActivityReviewService ReviewService
+@inject IActualFlowService FlowService
 @inject AuthenticationStateProvider AuthState
 
 <PageTitle>Review — PlanToSave</PageTitle>
@@ -9,6 +10,67 @@
     <h1 class="mb-0">Review</h1>
     <span class="text-muted small">Close the loop on past activities</span>
 </div>
+
+@* Log-as-expense follow-up prompt *@
+@if (loggingPlanId.HasValue)
+{
+    <div class="card border-success mb-4">
+        <div class="card-header bg-success text-white fw-semibold">
+            ✓ Review saved — log this as an expense?
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                You spent <strong>@logForm.Amount.ToString("C")</strong> on <strong>@logIdeaTitle</strong>.
+                Want to record it as an actual transaction?
+            </p>
+            <EditForm Model="logForm" OnValidSubmit="SubmitLogExpense">
+                <DataAnnotationsValidator />
+                <div class="row g-2 mb-2">
+                    <div class="col-sm">
+                        <label class="form-label fw-semibold small mb-1">From account</label>
+                        <InputSelect @bind-Value="logForm.FromAccountId" class="form-select form-select-sm">
+                            <option value="">-- select --</option>
+                            @foreach (var a in fromOptions)
+                            {
+                                <option value="@a.Id">@a.Name (@a.Type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-sm">
+                        <label class="form-label fw-semibold small mb-1">To account</label>
+                        <InputSelect @bind-Value="logForm.ToAccountId" class="form-select form-select-sm">
+                            <option value="">-- select --</option>
+                            @foreach (var a in toOptions)
+                            {
+                                <option value="@a.Id">@a.Name (@a.Type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-sm-auto">
+                        <label class="form-label fw-semibold small mb-1">Amount</label>
+                        <div class="input-group input-group-sm" style="max-width:160px;">
+                            <span class="input-group-text">$</span>
+                            <InputNumber @bind-Value="logForm.Amount" class="form-control" />
+                        </div>
+                        <ValidationMessage For="() => logForm.Amount" class="text-danger small" />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-semibold small mb-1">Description <span class="text-muted fw-normal">(optional)</span></label>
+                    <InputText @bind-Value="logForm.Description" class="form-control form-control-sm" />
+                </div>
+                @if (logError is not null)
+                {
+                    <div class="alert alert-danger py-1 small">@logError</div>
+                }
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success btn-sm">Log expense</button>
+                    <button type="button" class="btn btn-link btn-sm p-0" @onclick="SkipLogExpense">Skip</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
 
 @if (plans is null)
 {
@@ -82,6 +144,7 @@ else
                                     <button type="button"
                                             class="btn btn-sm @(reviewForm.Rating == s ? "btn-warning" : "btn-outline-warning")"
                                             @onclick="() => reviewForm.Rating = s"
+                                            aria-label="Rate @s star(s)"
                                             style="font-size: 1.2rem; line-height: 1;">
                                         ★
                                     </button>
@@ -147,6 +210,14 @@ else
     private SubmitReviewDto reviewForm = new();
     private string? submitError;
 
+    // Log-as-transaction state
+    private Guid? loggingPlanId;
+    private string logIdeaTitle = "";
+    private CreateActualFlowDto logForm = new();
+    private string? logError;
+    private List<AccountOptionDto> fromOptions = [];
+    private List<AccountOptionDto> toOptions = [];
+
     protected override async Task OnInitializedAsync()
     {
         var auth = await AuthState.GetAuthenticationStateAsync();
@@ -185,15 +256,65 @@ else
     {
         try
         {
+            var plan = plans!.First(p => p.Id == planId);
             await ReviewService.SubmitAsync(userId, planId, reviewForm);
             expandedId  = null;
             submitError = null;
-            await LoadPlans();
+
+            if (reviewForm.ActualAmount is > 0)
+            {
+                // Load account options lazily
+                if (fromOptions.Count == 0)
+                {
+                    fromOptions = await FlowService.GetFromAccountOptionsAsync(userId);
+                    toOptions   = await FlowService.GetToAccountOptionsAsync(userId);
+                }
+
+                logIdeaTitle = plan.IdeaTitle;
+                logForm = new CreateActualFlowDto
+                {
+                    Amount      = reviewForm.ActualAmount.Value,
+                    Date        = DateOnly.FromDateTime(DateTime.Today),
+                    Description = plan.IdeaTitle
+                };
+                logError       = null;
+                loggingPlanId  = planId;
+                await LoadPlans(); // reload list (plan is now Done so it'll disappear)
+            }
+            else
+            {
+                await LoadPlans();
+            }
         }
         catch (Exception ex)
         {
             submitError = ex.Message;
         }
+    }
+
+    private async Task SubmitLogExpense()
+    {
+        if (logForm.FromAccountId == Guid.Empty || logForm.ToAccountId == Guid.Empty)
+        {
+            logError = "Please select both From and To accounts.";
+            return;
+        }
+        try
+        {
+            await FlowService.CreateAsync(userId, logForm);
+            loggingPlanId = null;
+            logError      = null;
+        }
+        catch (Exception ex)
+        {
+            logError = ex.Message;
+        }
+    }
+
+    private void SkipLogExpense()
+    {
+        loggingPlanId = null;
+        logError      = null;
     }
 
     private async Task ConfirmSkip(Guid planId)

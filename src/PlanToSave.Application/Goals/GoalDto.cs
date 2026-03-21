@@ -15,6 +15,8 @@ public record GoalDto(
     DateOnly StartDate,
     DateOnly TargetDate,
     bool IsComplete,
+    Guid? IdeaId,
+    string? IdeaTitle,
     DateTime CreatedAt);
 
 public class CreateGoalDto
@@ -34,6 +36,9 @@ public class CreateGoalDto
 
     public DateOnly StartDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     public DateOnly TargetDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddYears(1));
+
+    /// <summary>Optional — link this goal to an idea in the backlog.</summary>
+    public Guid? IdeaId { get; set; }
 }
 
 public interface IGoalService

@@ -22,7 +22,12 @@ public record ActivityPlanDto(
     int TotalSteps,
     int CompletedSteps,
     DateTime CreatedAt,
-    List<ActivityStepDto> Steps);
+    List<ActivityStepDto> Steps,
+    Guid? PlannedFlowId = null,
+    decimal? BudgetAmount = null,
+    string? BudgetDescription = null,
+    int? BudgetYear = null,
+    int? BudgetMonth = null);
 
 public class CreateActivityPlanDto
 {
@@ -42,4 +47,6 @@ public interface IActivityPlanService
     Task<Guid> AddStepAsync(string userId, Guid planId, string title);
     Task ToggleStepAsync(string userId, Guid stepId);
     Task DeleteStepAsync(string userId, Guid stepId);
+    /// <summary>Link or unlink a planned budget flow. Pass null plannedFlowId to unlink.</summary>
+    Task LinkBudgetAsync(string userId, Guid planId, Guid? plannedFlowId);
 }
