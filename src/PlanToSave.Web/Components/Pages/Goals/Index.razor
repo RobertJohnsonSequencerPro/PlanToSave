@@ -1,0 +1,255 @@
+@page "/goals"
+@attribute [Authorize]
+@inject IGoalService GoalService
+@inject IAccountService AccountService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Goals</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Goals</h1>
+    <button class="btn btn-primary" @onclick="ToggleAddForm">
+        @(showAddForm ? "Cancel" : "+ New Goal")
+    </button>
+</div>
+
+@if (showAddForm)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h6 class="card-subtitle mb-3 text-muted">New Goal</h6>
+            <EditForm Model="newGoal" OnValidSubmit="CreateGoal">
+                <DataAnnotationsValidator />
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Goal Name</label>
+                        <InputText @bind-Value="newGoal.Name" class="form-control" placeholder="e.g. Emergency Fund" />
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+                        <InputText @bind-Value="newGoal.Description" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Target Account <span class="text-muted small">(save into)</span></label>
+                        <InputSelect @bind-Value="newGoal.TargetAccountId" class="form-select">
+                            <option value="@Guid.Empty">— select —</option>
+                            @foreach (var a in stockAccounts)
+                            {
+                                <option value="@a.Id">@a.Name (@a.Type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Source Account <span class="text-muted small">(fund from)</span></label>
+                        <InputSelect @bind-Value="newGoal.SourceAccountId" class="form-select">
+                            <option value="@Guid.Empty">— select —</option>
+                            @foreach (var a in stockAccounts)
+                            {
+                                <option value="@a.Id">@a.Name (@a.Type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Target Amount</label>
+                        <InputNumber @bind-Value="newGoal.TargetAmount" class="form-control" min="0.01" step="0.01" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Start Date</label>
+                        <InputDate @bind-Value="newGoal.StartDate" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Target Date</label>
+                        <InputDate @bind-Value="newGoal.TargetDate" class="form-control" />
+                    </div>
+                </div>
+                <ValidationSummary class="text-danger mt-2" />
+                @if (formError is not null)
+                {
+                    <div class="text-danger mt-2 small">@formError</div>
+                }
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">Save Goal</button>
+                    <button type="button" class="btn btn-link btn-sm" @onclick="ToggleAddForm">Cancel</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (goals is null)
+{
+    <p class="text-muted">Loading...</p>
+}
+else if (goals.Count == 0)
+{
+    <div class="card text-center py-5">
+        <div class="card-body text-muted">
+            <p class="mb-2">No goals yet.</p>
+            <p>Goals track your progress toward a savings target in a specific account.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-3 d-flex gap-2">
+        <button class="btn btn-sm @(showComplete == false ? "btn-primary" : "btn-outline-secondary")"
+                @onclick="() => showComplete = false">
+            Active (@goals.Count(g => !g.IsComplete))
+        </button>
+        <button class="btn btn-sm @(showComplete == true ? "btn-secondary" : "btn-outline-secondary")"
+                @onclick="() => showComplete = true">
+            Completed (@goals.Count(g => g.IsComplete))
+        </button>
+    </div>
+
+    @foreach (var goal in goals.Where(g => g.IsComplete == showComplete))
+    {
+        var pct = goal.TargetAmount > 0
+            ? Math.Min(100, (int)Math.Round(goal.SavedAmount / goal.TargetAmount * 100))
+            : 0;
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var daysLeft = goal.TargetDate.DayNumber - today.DayNumber;
+        var progressClass = pct >= 100 ? "bg-success" : (daysLeft < 30 ? "bg-warning" : "bg-primary");
+        var monthlyNeeded = goal.TargetAmount > goal.SavedAmount && daysLeft > 0
+            ? (goal.TargetAmount - goal.SavedAmount) / Math.Max(1, (decimal)daysLeft / 30.44m)
+            : 0m;
+
+        <div class="card mb-3 @(goal.IsComplete ? "border-success" : "")">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h5 class="card-title mb-0">
+                            @if (goal.IsComplete)
+                            {
+                                <span class="badge bg-success me-2">✓ Complete</span>
+                            }
+                            @goal.Name
+                        </h5>
+                        @if (goal.Description is not null)
+                        {
+                            <p class="text-muted small mb-0">@goal.Description</p>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm @(goal.IsComplete ? "btn-outline-secondary" : "btn-outline-success")"
+                                @onclick="() => ToggleComplete(goal.Id)">
+                            @(goal.IsComplete ? "Reopen" : "Mark Complete")
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => DeleteGoal(goal.Id, goal.Name)">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-6 col-sm-3">
+                        <div class="text-muted small">Saved</div>
+                        <div class="fw-bold">@goal.SavedAmount.ToString("C")</div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="text-muted small">Target</div>
+                        <div class="fw-bold">@goal.TargetAmount.ToString("C")</div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="text-muted small">Target Date</div>
+                        <div class="fw-bold">
+                            @goal.TargetDate.ToString("MMM d, yyyy")
+                            @if (!goal.IsComplete)
+                            {
+                                <span class="d-block small @(daysLeft < 0 ? "text-danger" : daysLeft < 30 ? "text-warning" : "text-muted")">
+                                    @(daysLeft < 0 ? Math.Abs(daysLeft) + "d overdue" : daysLeft + "d left")
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="text-muted small">Target Account</div>
+                        <div class="fw-semibold small">@goal.TargetAccountName</div>
+                    </div>
+                </div>
+
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar @progressClass"
+                         role="progressbar"
+                         style="width: @pct%"
+                         aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100">
+                        @pct%
+                    </div>
+                </div>
+
+                @if (!goal.IsComplete && monthlyNeeded > 0)
+                {
+                    <div class="text-muted small mt-1 text-end">
+                        ~@monthlyNeeded.ToString("C") / month needed to reach goal on time
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<GoalDto>? goals;
+    private List<AccountDto> stockAccounts = [];
+    private string userId = "";
+    private bool showAddForm = false;
+    private CreateGoalDto newGoal = new();
+    private string? formError;
+    private bool showComplete = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
+        var goalsTask = GoalService.GetGoalsAsync(userId);
+        var accountsTask = AccountService.GetAccountsAsync(userId);
+        await Task.WhenAll(goalsTask, accountsTask);
+
+        goals = goalsTask.Result;
+        stockAccounts = accountsTask.Result.Where(a => a.IsStockAccount && !a.IsArchived).ToList();
+    }
+
+    private void ToggleAddForm()
+    {
+        showAddForm = !showAddForm;
+        if (showAddForm)
+        {
+            newGoal = new CreateGoalDto();
+            formError = null;
+        }
+    }
+
+    private async Task CreateGoal()
+    {
+        if (newGoal.TargetAccountId == Guid.Empty || newGoal.SourceAccountId == Guid.Empty)
+        {
+            formError = "Please select both Target and Source accounts.";
+            return;
+        }
+        try
+        {
+            await GoalService.CreateAsync(userId, newGoal);
+            goals = await GoalService.GetGoalsAsync(userId);
+            showAddForm = false;
+            formError = null;
+        }
+        catch (Exception ex)
+        {
+            formError = ex.Message;
+        }
+    }
+
+    private async Task ToggleComplete(Guid id)
+    {
+        await GoalService.MarkCompleteAsync(userId, id);
+        goals = await GoalService.GetGoalsAsync(userId);
+    }
+
+    private async Task DeleteGoal(Guid id, string name)
+    {
+        await GoalService.DeleteAsync(userId, id);
+        goals = await GoalService.GetGoalsAsync(userId);
+    }
+}
