@@ -158,7 +158,17 @@ public class ActualFlowService(ApplicationDbContext db) : IActualFlowService
         if (toInsert.Count > 0)
         {
             db.ActualFlows.AddRange(toInsert);
-            await db.SaveChangesAsync();
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch
+            {
+                // Clear the change tracker so a failed import doesn't poison
+                // the shared DbContext for subsequent operations in this circuit.
+                db.ChangeTracker.Clear();
+                throw;
+            }
         }
 
         return (toInsert.Count, errors);
