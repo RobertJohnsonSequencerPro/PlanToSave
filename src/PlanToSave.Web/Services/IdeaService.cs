@@ -67,19 +67,4 @@ public class IdeaService(ApplicationDbContext db) : IIdeaService
         await db.SaveChangesAsync();
     }
 
-    public async Task<IdeaDto?> GetRandomBacklogIdeaAsync(string userId, IdeaEnergyLevel? energy = null, IdeaCostEstimate? cost = null)
-    {
-        var query = db.Ideas.Where(i => i.UserId == userId && i.Status == IdeaStatus.Backlog);
-        if (energy.HasValue) query = query.Where(i => i.EnergyLevel == energy.Value);
-        if (cost.HasValue)   query = query.Where(i => i.CostEstimate == cost.Value);
-
-        var ids = await query.Select(i => i.Id).ToListAsync();
-        if (ids.Count == 0) return null;
-
-        var randomId = ids[Random.Shared.Next(ids.Count)];
-        var idea = await db.Ideas.FirstAsync(i => i.Id == randomId);
-        return new IdeaDto(idea.Id, idea.Title, idea.Description,
-            idea.Category, idea.EnergyLevel, idea.CostEstimate,
-            idea.EstimatedAmount, idea.Tags, idea.Status, idea.CreatedAt);
-    }
 }

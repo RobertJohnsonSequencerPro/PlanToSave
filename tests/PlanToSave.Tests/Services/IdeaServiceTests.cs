@@ -248,67 +248,6 @@ public class IdeaServiceTests
             svc.DeleteAsync("user-99", idea.Id));
     }
 
-    // ── GetRandomBacklogIdeaAsync ─────────────────────────────────────
-
-    [Fact]
-    public async Task GetRandomBacklogIdeaAsync_ReturnsNull_WhenNoBacklogIdeas()
-    {
-        await using var db = TestDbContextFactory.Create();
-        db.Ideas.Add(MakeIdea("user-1", "Done Idea", status: IdeaStatus.Done));
-        await db.SaveChangesAsync();
-
-        var svc = new IdeaService(db);
-        var result = await svc.GetRandomBacklogIdeaAsync("user-1");
-
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task GetRandomBacklogIdeaAsync_ReturnsBacklogIdea()
-    {
-        await using var db = TestDbContextFactory.Create();
-        db.Ideas.Add(MakeIdea("user-1", "Backlog Idea", status: IdeaStatus.Backlog));
-        await db.SaveChangesAsync();
-
-        var svc = new IdeaService(db);
-        var result = await svc.GetRandomBacklogIdeaAsync("user-1");
-
-        Assert.NotNull(result);
-        Assert.Equal(IdeaStatus.Backlog, result.Status);
-    }
-
-    [Fact]
-    public async Task GetRandomBacklogIdeaAsync_RespectsEnergyFilter()
-    {
-        await using var db = TestDbContextFactory.Create();
-        db.Ideas.AddRange(
-            MakeIdea("user-1", "High Energy", status: IdeaStatus.Backlog, energy: IdeaEnergyLevel.High),
-            MakeIdea("user-1", "Low Energy",  status: IdeaStatus.Backlog, energy: IdeaEnergyLevel.Low));
-        await db.SaveChangesAsync();
-
-        var svc = new IdeaService(db);
-        var result = await svc.GetRandomBacklogIdeaAsync("user-1", energy: IdeaEnergyLevel.Low);
-
-        Assert.NotNull(result);
-        Assert.Equal(IdeaEnergyLevel.Low, result.EnergyLevel);
-    }
-
-    [Fact]
-    public async Task GetRandomBacklogIdeaAsync_RespectsCostFilter()
-    {
-        await using var db = TestDbContextFactory.Create();
-        db.Ideas.AddRange(
-            MakeIdea("user-1", "Cheap",     status: IdeaStatus.Backlog, cost: IdeaCostEstimate.Cheap),
-            MakeIdea("user-1", "Expensive", status: IdeaStatus.Backlog, cost: IdeaCostEstimate.Expensive));
-        await db.SaveChangesAsync();
-
-        var svc = new IdeaService(db);
-        var result = await svc.GetRandomBacklogIdeaAsync("user-1", cost: IdeaCostEstimate.Cheap);
-
-        Assert.NotNull(result);
-        Assert.Equal(IdeaCostEstimate.Cheap, result.CostEstimate);
-    }
-
     // ── Helpers ───────────────────────────────────────────────────────
 
     private static Idea MakeIdea(
