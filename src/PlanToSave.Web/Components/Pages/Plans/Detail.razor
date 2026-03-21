@@ -234,14 +234,9 @@ else
         var auth = await AuthState.GetAuthenticationStateAsync();
         userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
 
-        var planTask = PlanService.GetOrCreatePlanAsync(userId, Year, Month);
-        var fromTask = FlowService.GetFromAccountOptionsAsync(userId);
-        var toTask = FlowService.GetToAccountOptionsAsync(userId);
-        await Task.WhenAll(planTask, fromTask, toTask);
-
-        plan = planTask.Result;
-        fromOptions = fromTask.Result;
-        toOptions = toTask.Result;
+        plan        = await PlanService.GetOrCreatePlanAsync(userId, Year, Month);
+        fromOptions = await FlowService.GetFromAccountOptionsAsync(userId);
+        toOptions   = await FlowService.GetToAccountOptionsAsync(userId);
     }
 
     private void ToggleAddForm()

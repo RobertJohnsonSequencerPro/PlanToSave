@@ -167,14 +167,9 @@ else
         var state = await AuthState;
         var userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
-        var balancesTask = AccountService.GetBalancesAsync(userId);
-        var goalsTask    = GoalService.GetGoalsAsync(userId);
-        var planTask     = PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
-        await Task.WhenAll(balancesTask, goalsTask, planTask);
-
-        balances    = balancesTask.Result;
-        activeGoals = goalsTask.Result.Where(g => !g.IsComplete).ToList();
-        currentPlan = planTask.Result;
+        balances    = await AccountService.GetBalancesAsync(userId);
+        activeGoals = (await GoalService.GetGoalsAsync(userId)).Where(g => !g.IsComplete).ToList();
+        currentPlan = await PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
     }
 
     private static string FormatCurrency(decimal amount) =>
