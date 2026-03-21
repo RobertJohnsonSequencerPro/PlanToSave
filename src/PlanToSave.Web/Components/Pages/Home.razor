@@ -19,8 +19,11 @@
 else
 {
     @* Pipeline strip *@
-    <h5 class="text-muted text-uppercase small fw-semibold mb-3">Your Pipeline</h5>
-    <div class="d-flex align-items-stretch mb-4">
+    <div class="d-flex justify-content-between align-items-baseline mb-2">
+        <h5 class="text-muted text-uppercase small fw-semibold mb-0">Your Pipeline</h5>
+        <a href="/pipeline" class="text-muted small text-decoration-none">Full journey view →</a>
+    </div>
+    <div class="d-flex align-items-stretch mb-3">
         <a href="/ideas" class="text-decoration-none flex-fill">
             <div class="card h-100 text-center py-3 px-1 @(BacklogCount > 0 ? "border-warning" : "")">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="@(BacklogCount > 0 ? "text-warning" : "text-muted") d-block mx-auto mb-1" viewBox="0 0 16 16">

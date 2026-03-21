@@ -1,0 +1,492 @@
+@page "/pipeline"
+@attribute [Authorize]
+@inject IGoalService GoalService
+@inject IIdeaService IdeaService
+@inject IMonthlyPlanService PlanService
+@using System.Security.Claims
+@using PlanToSave.Application.Goals
+@using PlanToSave.Application.Ideas
+@using PlanToSave.Application.Plans
+@using PlanToSave.Domain.Enums
+
+<PageTitle>Your Savings Journey — PlanToSave</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+        <h1 class="mb-0">Your Savings Journey</h1>
+        <p class="text-muted mb-0" style="font-size:.9rem">
+            From a spark of an idea to money in the bank — four steps, one clear picture.
+        </p>
+    </div>
+    <span class="text-muted small">@DateTime.Now.ToString("MMMM yyyy")</span>
+</div>
+
+<hr class="my-4" />
+
+@if (isLoading)
+{
+    <p class="text-muted">Loading your journey…</p>
+}
+else
+{
+    <div class="row g-0 align-items-stretch mb-4">
+
+        @* ── Stage 1: Ideas ─────────────────────────────────────────────── *@
+        <div class="col-12 col-md">
+            <div class="stage-card stage-ideas h-100">
+                <div class="stage-header">
+                    <div class="stage-badge bg-warning text-dark">1</div>
+                    <div>
+                        <div class="stage-title">Ideas</div>
+                        <div class="stage-tagline">What do you want to save for?</div>
+                    </div>
+                </div>
+
+                <div class="stage-count text-warning">@backlogIdeas.Count</div>
+                <div class="stage-count-label">
+                    @(backlogIdeas.Count == 1 ? "idea" : "ideas") in your wishlist
+                </div>
+
+                @if (backlogIdeas.Count > 0)
+                {
+                    <ul class="stage-list">
+                        @foreach (var idea in backlogIdeas.Take(5))
+                        {
+                            <li>
+                                <span class="stage-item-badge bg-secondary text-white">@idea.Category</span>
+                                <span class="stage-item-label">@idea.Title</span>
+                                @if (idea.EstimatedAmount.HasValue)
+                                {
+                                    <span class="stage-item-meta">@idea.EstimatedAmount.Value.ToString("C0")</span>
+                                }
+                            </li>
+                        }
+                        @if (backlogIdeas.Count > 5)
+                        {
+                            <li class="stage-list-more">+@(backlogIdeas.Count - 5) more</li>
+                        }
+                    </ul>
+
+                    @if (unlinkedCount > 0)
+                    {
+                        <div class="stage-nudge">
+                            <strong>@unlinkedCount</strong>
+                            @(unlinkedCount == 1 ? "idea" : "ideas") with no savings goal yet
+                            — <a href="/goals" class="text-warning fw-semibold text-decoration-none">commit to one →</a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="stage-empty">Nothing here yet — what would you like to save for?</p>
+                }
+
+                <div class="stage-actions mt-auto pt-3">
+                    <a href="/ideas" class="btn btn-outline-warning btn-sm w-100 mb-2">View all ideas →</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="stage-arrow-col d-none d-md-flex">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-muted" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"/>
+            </svg>
+        </div>
+        <div class="d-md-none text-center text-muted py-2" style="font-size:1.25rem">↓</div>
+
+        @* ── Stage 2: Goals ─────────────────────────────────────────────── *@
+        <div class="col-12 col-md">
+            <div class="stage-card stage-goals h-100">
+                <div class="stage-header">
+                    <div class="stage-badge bg-primary text-white">2</div>
+                    <div>
+                        <div class="stage-title">Goals</div>
+                        <div class="stage-tagline">Ready to make the commitment?</div>
+                    </div>
+                </div>
+
+                <div class="stage-count text-primary">@activeGoals.Count</div>
+                <div class="stage-count-label">
+                    @(activeGoals.Count == 1 ? "active goal" : "active goals")
+                </div>
+
+                @if (activeGoals.Count > 0)
+                {
+                    <ul class="stage-list">
+                        @foreach (var goal in activeGoals.Take(5))
+                        {
+                            var pct = goal.TargetAmount > 0
+                                ? (int)Math.Min(100, Math.Round(goal.SavedAmount / goal.TargetAmount * 100))
+                                : 0;
+                            var today = DateOnly.FromDateTime(DateTime.Today);
+                            var daysLeft = goal.TargetDate.DayNumber - today.DayNumber;
+
+                            <li class="stage-goal-item">
+                                <div class="d-flex justify-content-between align-items-baseline">
+                                    <span class="stage-item-label">@goal.Name</span>
+                                    <span class="stage-item-meta">@pct%</span>
+                                </div>
+                                <div class="progress mt-1" style="height:3px">
+                                    <div class="progress-bar @(pct >= 100 ? "bg-success" : daysLeft < 30 ? "bg-warning" : "bg-primary")"
+                                         style="width:@pct%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span class="stage-item-meta">@goal.SavedAmount.ToString("C0") / @goal.TargetAmount.ToString("C0")</span>
+                                    <span class="stage-item-meta @(daysLeft < 0 ? "text-danger" : daysLeft < 30 ? "text-warning" : "")">
+                                        @(daysLeft < 0 ? Math.Abs(daysLeft) + "d overdue" : daysLeft + "d left")
+                                    </span>
+                                </div>
+                            </li>
+                        }
+                        @if (activeGoals.Count > 5)
+                        {
+                            <li class="stage-list-more">+@(activeGoals.Count - 5) more</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="stage-empty">No active goals — pick an idea and commit!</p>
+                }
+
+                <div class="stage-actions mt-auto pt-3">
+                    <a href="/goals" class="btn btn-outline-primary btn-sm w-100 mb-2">View all goals →</a>
+                    <a href="/ideas" class="btn btn-link btn-sm w-100 text-muted p-0">
+                        ← Turn an idea into a goal
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="stage-arrow-col d-none d-md-flex">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-muted" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"/>
+            </svg>
+        </div>
+        <div class="d-md-none text-center text-muted py-2" style="font-size:1.25rem">↓</div>
+
+        @* ── Stage 3: Budgeted ──────────────────────────────────────────── *@
+        <div class="col-12 col-md">
+            <div class="stage-card stage-budgeted h-100">
+                <div class="stage-header">
+                    <div class="stage-badge bg-info text-dark">3</div>
+                    <div>
+                        <div class="stage-title">Budgeted</div>
+                        <div class="stage-tagline">Have you put it in the plan?</div>
+                    </div>
+                </div>
+
+                @{
+                    var plannedCount  = currentPlan?.PlannedFlows.Count ?? 0;
+                    var plannedTotal  = currentPlan?.PlannedFlows.Sum(f => f.PlannedAmount) ?? 0m;
+                }
+                <div class="stage-count text-info">@plannedCount</div>
+                <div class="stage-count-label">
+                    @(plannedCount == 1 ? "planned flow" : "planned flows") this month
+                </div>
+
+                @if (currentPlan is not null && currentPlan.PlannedFlows.Count > 0)
+                {
+                    <ul class="stage-list">
+                        @foreach (var flow in currentPlan.PlannedFlows.OrderByDescending(f => f.PlannedAmount).Take(5))
+                        {
+                            <li>
+                                <span class="stage-item-label">
+                                    @(flow.Description ?? flow.FromAccountName + " → " + flow.ToAccountName)
+                                </span>
+                                <span class="stage-item-meta fw-semibold text-info">@flow.PlannedAmount.ToString("C0")</span>
+                            </li>
+                        }
+                        @if (plannedCount > 5)
+                        {
+                            <li class="stage-list-more">+@(plannedCount - 5) more</li>
+                        }
+                    </ul>
+                    <div class="stage-nudge">
+                        Total budgeted: <strong class="text-info">@plannedTotal.ToString("C")</strong>
+                    </div>
+                }
+                else
+                {
+                    <p class="stage-empty">Nothing planned for @DateTime.Now.ToString("MMMM") yet.</p>
+                }
+
+                <div class="stage-actions mt-auto pt-3">
+                    <a href="/plans/@DateTime.Today.Year/@DateTime.Today.Month"
+                       class="btn btn-outline-info btn-sm w-100 mb-2">
+                        Open @DateTime.Now.ToString("MMMM")'s plan →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="stage-arrow-col d-none d-md-flex">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-muted" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"/>
+            </svg>
+        </div>
+        <div class="d-md-none text-center text-muted py-2" style="font-size:1.25rem">↓</div>
+
+        @* ── Stage 4: Tracked ───────────────────────────────────────────── *@
+        <div class="col-12 col-md">
+            @{
+                var loggedCount  = currentPlan?.PlannedFlows.Count(f => f.ActualAmount != 0) ?? 0;
+                var loggedTotal  = currentPlan?.PlannedFlows.Sum(f => f.ActualAmount) ?? 0m;
+                var loggedPct    = plannedCount > 0 ? (int)Math.Round((double)loggedCount / plannedCount * 100) : 0;
+                var loggedClass  = plannedCount > 0 && loggedCount == plannedCount ? "text-success"
+                                 : loggedCount > 0 ? "text-warning" : "text-muted";
+                var borderClass  = plannedCount > 0 && loggedCount == plannedCount ? "stage-tracked-complete"
+                                 : loggedCount > 0 ? "stage-tracked-partial" : "";
+            }
+            <div class="stage-card stage-tracked @borderClass h-100">
+                <div class="stage-header">
+                    <div class="stage-badge @(loggedCount == plannedCount && plannedCount > 0 ? "bg-success" : "bg-secondary") text-white">4</div>
+                    <div>
+                        <div class="stage-title">Tracked</div>
+                        <div class="stage-tagline">Did you follow through?</div>
+                    </div>
+                </div>
+
+                <div class="stage-count @loggedClass">
+                    @loggedCount<span class="fs-5 fw-normal text-muted">/@plannedCount</span>
+                </div>
+                <div class="stage-count-label">flows logged this month</div>
+
+                @if (plannedCount > 0)
+                {
+                    <div class="progress mb-3 mt-2" style="height:8px">
+                        <div class="progress-bar @(loggedPct >= 100 ? "bg-success" : "bg-warning")"
+                             style="width:@loggedPct%"></div>
+                    </div>
+
+                    @if (loggedTotal > 0)
+                    {
+                        <div class="stage-nudge">
+                            <span class="@loggedClass fw-semibold">@loggedTotal.ToString("C")</span>
+                            actually logged vs @(currentPlan!.PlannedFlows.Sum(f => f.PlannedAmount).ToString("C")) planned
+                        </div>
+                    }
+
+                    @if (loggedCount < plannedCount)
+                    {
+                        <div class="stage-nudge text-warning">
+                            <strong>@(plannedCount - loggedCount)</strong> planned
+                            @(plannedCount - loggedCount == 1 ? "flow" : "flows") still to log
+                        </div>
+                    }
+                    else if (loggedCount == plannedCount)
+                    {
+                        <div class="stage-nudge text-success">
+                            ✓ All planned flows logged — great work!
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="stage-empty">Nothing planned for @DateTime.Now.ToString("MMMM") yet.</p>
+                }
+
+                <div class="stage-actions mt-auto pt-3">
+                    <a href="/flows" class="btn @(loggedCount == plannedCount && plannedCount > 0 ? "btn-outline-success" : "btn-outline-secondary") btn-sm w-100 mb-2">
+                        View transactions →
+                    </a>
+                    <a href="/flows/new" class="btn btn-link btn-sm w-100 text-muted p-0">
+                        + Log a transaction
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    /* ── Journey page layout ──────────────────────────────────────────── */
+    .stage-arrow-col {
+        width: 32px;
+        min-width: 32px;
+        max-width: 32px;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    /* ── Stage card base ───────────────────────────────────────────────── */
+    .stage-card {
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: .5rem;
+        padding: 1.25rem 1.1rem 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Colored top accent border per stage */
+    .stage-ideas    { border-top: 3px solid #ffc107; }
+    .stage-goals    { border-top: 3px solid #0d6efd; }
+    .stage-budgeted { border-top: 3px solid #0dcaf0; }
+    .stage-tracked  { border-top: 3px solid #6c757d; }
+    .stage-tracked-complete { border-top-color: #198754; }
+    .stage-tracked-partial  { border-top-color: #ffc107; }
+
+    /* ── Stage header: badge + title/tagline ───────────────────────────── */
+    .stage-header {
+        display: flex;
+        align-items: flex-start;
+        gap: .6rem;
+        margin-bottom: .75rem;
+    }
+
+    .stage-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.7rem;
+        height: 1.7rem;
+        border-radius: 50%;
+        font-size: .85rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .stage-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .stage-tagline {
+        font-size: .78rem;
+        color: var(--bs-secondary-color);
+        margin-top: 1px;
+    }
+
+    /* ── Count ─────────────────────────────────────────────────────────── */
+    .stage-count {
+        font-size: 2.4rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: .15rem;
+    }
+
+    .stage-count-label {
+        font-size: .75rem;
+        color: var(--bs-secondary-color);
+        margin-bottom: .75rem;
+    }
+
+    /* ── Item list ─────────────────────────────────────────────────────── */
+    .stage-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 .5rem 0;
+        flex: 1;
+    }
+
+    .stage-list li {
+        display: flex;
+        align-items: baseline;
+        gap: .35rem;
+        padding: .35rem 0;
+        border-bottom: 1px solid var(--bs-border-color);
+        font-size: .82rem;
+    }
+
+    .stage-list li:last-child { border-bottom: none; }
+
+    .stage-goal-item {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .stage-list-more {
+        color: var(--bs-secondary-color);
+        padding-top: .35rem !important;
+        border-bottom: none !important;
+    }
+
+    .stage-item-badge {
+        font-size: .62rem;
+        padding: .15em .45em;
+        border-radius: .25rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .stage-item-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .stage-item-meta {
+        font-size: .72rem;
+        color: var(--bs-secondary-color);
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ── Nudge / hint text ─────────────────────────────────────────────── */
+    .stage-nudge {
+        font-size: .78rem;
+        padding: .35rem .5rem;
+        background: var(--bs-tertiary-bg);
+        border-radius: .3rem;
+        margin: .4rem 0;
+    }
+
+    /* ── Empty state ───────────────────────────────────────────────────── */
+    .stage-empty {
+        font-size: .82rem;
+        color: var(--bs-secondary-color);
+        font-style: italic;
+        flex: 1;
+        margin-bottom: .5rem;
+    }
+
+    /* ── Mobile responsive: arrows become down-arrows, cards full-width ─ */
+    @@media (max-width: 767px) {
+        .stage-card {
+            border-top-width: 4px;
+        }
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private bool isLoading = true;
+    private List<IdeaDto> backlogIdeas = [];
+    private List<GoalDto> activeGoals  = [];
+    private MonthlyPlanDetailDto? currentPlan;
+    private int unlinkedCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state  = await AuthState;
+        var userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        var ideasTask = IdeaService.GetIdeasAsync(userId, new IdeaFilterDto { Status = IdeaStatus.Backlog });
+        var goalsTask = GoalService.GetGoalsAsync(userId);
+        var planTask  = PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
+        await Task.WhenAll(ideasTask, goalsTask, planTask);
+        var ideas = ideasTask.Result;
+        var goals = goalsTask.Result;
+        var plan  = planTask.Result;
+
+        backlogIdeas  = ideas;
+        activeGoals   = goals.Where(g => !g.IsComplete).ToList();
+        currentPlan   = plan;
+
+        var linkedIdeaIds = activeGoals
+            .Where(g => g.IdeaId.HasValue)
+            .Select(g => g.IdeaId!.Value)
+            .ToHashSet();
+
+        unlinkedCount = backlogIdeas.Count(i => !linkedIdeaIds.Contains(i.Id));
+        isLoading     = false;
+    }
+}
