@@ -593,7 +593,8 @@
         }
         catch (Exception ex)
         {
-            importError = $"Import failed: {ex.Message}";
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            importError = $"Import failed: {detail}";
         }
         finally
         {

@@ -147,7 +147,10 @@ public class ActualFlowService(ApplicationDbContext db) : IActualFlowService
                 Amount        = row.Amount,
                 Date          = row.Date,
                 Description   = string.IsNullOrWhiteSpace(row.Description)
-                                    ? null : row.Description.Trim(),
+                                    ? null
+                                    : row.Description.Trim() is { Length: > 300 } d
+                                        ? d[..297] + "…"
+                                        : row.Description.Trim(),
                 CreatedAt     = DateTime.UtcNow
             });
         }
