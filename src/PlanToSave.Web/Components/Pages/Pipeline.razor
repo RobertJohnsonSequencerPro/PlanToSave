@@ -9,13 +9,13 @@
 @using PlanToSave.Application.Plans
 @using PlanToSave.Domain.Enums
 
-<PageTitle>Your Savings Journey — PlanToSave</PageTitle>
+<PageTitle>Plan What You Want — PlanToSave</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-2">
     <div>
-        <h1 class="mb-0">Your Savings Journey</h1>
+        <h1 class="mb-0">Plan What You Want</h1>
         <p class="text-muted mb-0" style="font-size:.9rem">
-            From a spark of an idea to money in the bank — four steps, one clear picture.
+            Fun trips, new tires, weekend getaways — plan ahead for the things you want and need, so nothing ever catches you off guard.
         </p>
     </div>
     <span class="text-muted small">@DateTime.Now.ToString("MMMM yyyy")</span>
@@ -25,7 +25,7 @@
 
 @if (isLoading)
 {
-    <p class="text-muted">Loading your journey…</p>
+    <p class="text-muted">Loading your plan…</p>
 }
 else
 {
@@ -38,7 +38,7 @@ else
                     <div class="stage-badge bg-warning text-dark">1</div>
                     <div>
                         <div class="stage-title">Ideas</div>
-                        <div class="stage-tagline">What do you want to save for?</div>
+                        <div class="stage-tagline">What do you want to plan for?</div>
                     </div>
                 </div>
 
@@ -78,7 +78,8 @@ else
                 }
                 else
                 {
-                    <p class="stage-empty">Nothing here yet — what would you like to save for?</p>
+                    <p class="stage-empty">Nothing here yet — what would you like to plan for?</p>
+                    <p class="stage-empty-hint">Try something fun <em>(vacation, concert tickets)</em> or practical <em>(new tires, home repairs)</em>.</p>
                 }
 
                 <div class="stage-actions mt-auto pt-3">
@@ -442,6 +443,12 @@ else
         font-size: .82rem;
         color: var(--bs-secondary-color);
         font-style: italic;
+        margin-bottom: .25rem;
+    }
+
+    .stage-empty-hint {
+        font-size: .75rem;
+        color: var(--bs-secondary-color);
         flex: 1;
         margin-bottom: .5rem;
     }
