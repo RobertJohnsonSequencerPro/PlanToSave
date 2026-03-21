@@ -88,7 +88,13 @@
     </div>
 }
 
-@if (goals is null)
+@if (initError is not null)
+{
+    <div class="alert alert-danger">
+        <strong>Error loading goals:</strong> @initError
+    </div>
+}
+else if (goals is null)
 {
     <p class="text-muted">Loading...</p>
 }
@@ -219,17 +225,24 @@ else
     private CreateGoalDto newGoal = new();
     private string? formError;
     private bool showComplete = false;
+    private string? initError;
 
     protected override async Task OnInitializedAsync()
     {
         var auth = await AuthState.GetAuthenticationStateAsync();
         userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
-
-        goals         = await GoalService.GetGoalsAsync(userId);
-        var accounts  = await AccountService.GetAccountsAsync(userId);
-        stockAccounts = accounts.Where(a => a.IsStockAccount && !a.IsArchived).ToList();
-        backlogIdeas  = await IdeaService.GetIdeasAsync(userId,
-            new IdeaFilterDto { Status = IdeaStatus.Backlog });
+        try
+        {
+            goals         = await GoalService.GetGoalsAsync(userId);
+            var accounts  = await AccountService.GetAccountsAsync(userId);
+            stockAccounts = accounts.Where(a => a.IsStockAccount && !a.IsArchived).ToList();
+            backlogIdeas  = await IdeaService.GetIdeasAsync(userId,
+                new IdeaFilterDto { Status = IdeaStatus.Backlog });
+        }
+        catch (Exception ex)
+        {
+            initError = ex.ToString();
+        }
     }
 
     private void ToggleAddForm()
