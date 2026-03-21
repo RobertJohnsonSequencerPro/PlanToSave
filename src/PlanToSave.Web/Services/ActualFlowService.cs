@@ -174,6 +174,33 @@ public class ActualFlowService(ApplicationDbContext db) : IActualFlowService
         return (toInsert.Count, errors);
     }
 
+    public async Task<HashSet<int>> FindPotentialDuplicatesAsync(
+        string userId, IReadOnlyList<BulkImportRowDto> candidates)
+    {
+        if (candidates.Count == 0) return [];
+
+        // Filter existing flows by the dates present in the candidates for efficiency.
+        var dates = candidates.Select(r => r.Date).Distinct().ToList();
+
+        var existingSet = (await db.ActualFlows
+            .Where(f => f.UserId == userId && dates.Contains(f.Date))
+            .Select(f => new { f.Date, f.Amount, f.FromAccountId, f.ToAccountId })
+            .ToListAsync())
+            .Select(f => (f.Date, f.Amount, f.FromAccountId, f.ToAccountId))
+            .ToHashSet();
+
+        if (existingSet.Count == 0) return [];
+
+        var duplicateIndices = new HashSet<int>();
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            var r = candidates[i];
+            if (existingSet.Contains((r.Date, r.Amount, r.FromAccountId, r.ToAccountId)))
+                duplicateIndices.Add(i);
+        }
+        return duplicateIndices;
+    }
+
     private static ActualFlowDto ToDto(ActualFlow f) => new(
         f.Id,
         f.FromAccountId, f.FromAccount.Name, f.FromAccount.Type,
