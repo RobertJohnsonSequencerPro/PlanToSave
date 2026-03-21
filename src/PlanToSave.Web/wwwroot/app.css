@@ -57,6 +57,13 @@ h1:focus {
     border-color: #929292;
 }
 
+/* ── Progress bar size utilities ─────────────────────────── */
+/* Use these classes instead of inline style="height:..." */
+.progress-lg { height: 20px; }
+.progress-md { height: 10px; }
+.progress-sm { height: 6px;  }
+.progress-xs { height: 3px;  }
+
 /* ────────────────────────────────────────────────────────────
    LIGHT MODE: accessible colour palette
    Bootstrap 5's vivid warning (#ffc107) and info (#0dcaf0)

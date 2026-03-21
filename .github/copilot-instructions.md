@@ -62,16 +62,406 @@ src/
 - `Income`, `Expense` → **Flow accounts** (no balance, only period totals; `IsStockAccount = false`)
 - Transaction rules: Income can only be `FromAccount`; Expense can only be `ToAccount`; Stock accounts can be either side
 
-## UI Conventions
+## UI Style Guide
 
-- **Bootstrap 5** throughout — cards, tables, progress bars, badges, modals
+> **This style guide is the design law for this codebase. Every new page, component, and feature must follow these conventions. Do not introduce new patterns, color values, inline styles, or structural deviations without updating this guide first.**
+
+### Foundations
+
+- **Bootstrap 5.1** throughout — cards, tables, progress bars, badges, modals
 - Nav is an icon-only vertical rail with CSS tooltips (`class="rail-tooltip" data-tip="..."`)
-- Modals are implemented as Blazor conditionals (no JS — `@if (showModal) { <div class="modal fade show d-block"> ... }`) + a `.modal-backdrop.fade.show`
-- Inline forms use Bootstrap cards (`<div class="card mb-4"><div class="card-body">...`)
-- Empty states use centered card with muted text
-- Color conventions: amber = Ideas, blue = Goals, teal = Budgeted/Plans, green = complete/tracked
+- All dark mode overrides live in `wwwroot/app.css` under `[data-theme="dark"]`
+- Never use `style="..."` inline attributes — use CSS classes instead (see Anti-patterns)
+
+---
+
+### Page Layout
+
+Every page follows the same two-zone structure:
+
+```razor
+@* ── Page header ──────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Page Title</h1>
+    <div class="d-flex gap-2">
+        @* action buttons go here *@
+    </div>
+</div>
+
+@* ── Page body ─────────────────────────────────────────── *@
+@* content cards, tables, etc. *@
+```
+
+Rules:
+- Page title is always `<h1 class="mb-0">` — never `h2` or `.h3` at the top level
+- Header flex wrapper always uses `mb-4`
+- Breadcrumbs (`<nav aria-label="breadcrumb">`) go **above** the `<h1>`, not inside the flex row — use only on detail/edit pages, not list pages
+- All pages must have `@attribute [Authorize]`
+
+---
+
+### Action Buttons
+
+Buttons in the page header follow a priority order: secondary actions left, primary action rightmost.
+
+```razor
+<div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary" @onclick="...">Secondary Action</button>
+    <a href="/page/new" class="btn btn-primary">+ Primary Action</a>
+</div>
+```
+
+Rules:
+- Primary action: `btn btn-primary`
+- Secondary/alternate: `btn btn-outline-secondary` or `btn btn-outline-primary` (when blue-toned context)
+- Destructive: `btn btn-danger` (confirmation required — see Delete pattern)
+- All header buttons are **full size** (not `btn-sm`)
+- Use `+ Label` prefix for "add new" actions — no emoji in button labels
+
+---
+
+### Inline Add / Edit Forms
+
+When an add or edit form lives on the same page as the list (not a modal or separate page):
+
+```razor
+@if (showAddForm)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h6 class="card-subtitle mb-3 text-muted">Add New Item</h6>
+            <EditForm Model="dto" OnValidSubmit="HandleSave">
+                <DataAnnotationsValidator />
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Field Label</label>
+                        <InputText @bind-Value="dto.Field" class="form-control" placeholder="..." />
+                        <ValidationMessage For="() => dto.Field" class="text-danger small" />
+                    </div>
+                </div>
+                @if (formError is not null)
+                {
+                    <div class="alert alert-danger mt-3">@formError</div>
+                }
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button type="button" class="btn btn-link btn-sm" @onclick="CloseForm">Cancel</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+```
+
+Rules:
+- Wrapper: `<div class="card mb-4"><div class="card-body">`
+- Form title: `<h6 class="card-subtitle mb-3 text-muted">` — keep to ≤ 5 words
+- Grid: `<div class="row g-2">` with `col-md-X` columns — prefer 3, 4, or 6 column widths
+- Submit: `btn btn-primary btn-sm`; Cancel: `btn btn-link btn-sm`
+- Form-level errors: `<div class="alert alert-danger mt-3">` (not `.text-danger`)
+- Field-level errors: `<ValidationMessage class="text-danger small" />`
+- Optional fields: label text ends with ` <span class="text-muted">(optional)</span>`
+- Labels with currency inputs: use `<div class="input-group"><span class="input-group-text">$</span> ...`
+
+---
+
+### Modals
+
+Use modals when the action is a context switch (e.g., scheduling a goal from a list page). Use inline forms for simple add/edit on the same page.
+
+```razor
+@if (showModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">   @* add modal-lg if needed *@
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modal Title</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <EditForm Model="dto" OnValidSubmit="HandleSave">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        @* fields using mb-3 blocks *@
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+```
+
+Rules:
+- No JS — Blazor conditional renders the modal
+- Backdrop: `<div class="modal-backdrop fade show">` immediately before the modal div
+- Fields inside modal body: use `<div class="mb-3">` blocks (not `row g-2` grid)
+- Modal footer buttons: Cancel (`btn-outline-secondary`) left, Submit (`btn-primary`) right
+- Use `.modal-lg` for forms with many fields or complex layouts
+
+---
+
+### Tables
+
+```razor
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead>
+            <tr class="small text-uppercase text-muted">
+                <th>Column</th>
+                <th class="text-end">Amount</th>
+                <th></th>  @* actions column — no heading *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in items)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td class="text-end fw-semibold">@item.Amount.ToString("C")</td>
+                    <td class="text-end">
+                        @* action buttons *@
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+```
+
+Rules:
+- Always wrap in `<div class="table-responsive">`
+- Base classes: `table table-hover align-middle mb-0`
+- `table-sm` for dense data (planned flows, templates)
+- Header row: `class="small text-uppercase text-muted"` — no `table-light` on thead
+- Numeric/currency columns: `text-end` on both `<th>` and `<td>`; `fw-semibold` on amounts
+- Muted secondary data: `text-muted small`
+- Totals footer: `<tfoot>` with `fw-semibold` — use `table-light` only on `<tfoot>`
+- Action column: empty `<th>`, right-aligned `<td class="text-end">`
+
+---
+
+### Cards
+
+Cards are the primary content container throughout the app.
+
+```razor
+@* Standard content card *@
+<div class="card mb-4">
+    <div class="card-body">
+        <!-- content -->
+    </div>
+</div>
+
+@* Card with header *@
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <span class="fw-semibold">Section Title</span>
+        <span class="text-muted small">supplemental info</span>
+    </div>
+    <div class="card-body">
+        <!-- content -->
+    </div>
+</div>
+
+@* Card with list group (no card-body padding) *@
+<div class="card mb-4">
+    <div class="card-header py-2">
+        <span class="fw-semibold">Title</span>
+    </div>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item">...</li>
+    </ul>
+</div>
+```
+
+Rules:
+- Always `mb-4` between sibling cards
+- Card header padding: `py-2` (compact)
+- Card header layout: `d-flex justify-content-between align-items-center`
+- Card header title: `<span class="fw-semibold">` (not `<h6>` or `<strong>`)
+- Never put a card directly inside another card's `card-body`
+
+---
+
+### Empty States
+
+```razor
+<div class="card text-center py-5">
+    <div class="card-body text-muted">
+        <svg ...class="mb-3 text-muted" width="36" height="36"...><!-- icon --></svg>
+        <p class="mb-1 fw-semibold">Nothing here yet.</p>
+        <p class="mb-0 small">Explanatory sentence. Optional action below.</p>
+        @* optional: *@
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="...">Take action</button>
+        </div>
+    </div>
+</div>
+```
+
+Rules:
+- Always use the card pattern — never `.alert` for empty states
+- SVG icon: 36×36, `class="mb-3 text-muted"` — include when the emptiness needs visual weight
+- Heading line: `fw-semibold`, `mb-1`
+- Description: `small`, `mb-0`
+- Action button (optional): `btn btn-sm btn-outline-secondary`, inside `mt-3` div
+
+---
+
+### Badges
+
+Account type badge color mapping (use everywhere accounts appear):
+
+```csharp
+AccountType.Income     → "bg-success"
+AccountType.Expense    → "bg-danger"
+AccountType.Checking   → "bg-primary"
+AccountType.Savings    → "bg-info"
+AccountType.Credit     → "bg-warning"
+AccountType.Investment → "bg-secondary"
+```
+
+Status badge color mapping:
+
+```csharp
+Draft    → "bg-secondary"
+Active   → "bg-primary"
+Closed   → "bg-success"
+```
+
+Rules:
+- Always `me-1` after a badge that precedes text
+- Badge text: use the enum value as-is (do not force `.ToLower()`)
+- Never use `bg-light text-dark` for semantic states — only for genuinely neutral/unknown values
+
+---
+
+### Progress Bars
+
+Three named sizes — **do not use inline `style="height:..."`**:
+
+| Class | Height | Use |
+|-------|--------|-----|
+| `.progress-lg` | 20px | Full goal progress with percentage text inside |
+| `.progress-md` | 10px | Summary/dashboard sparklines |
+| `.progress-sm` | 6px | Compact context (activity steps, plan rows) |
+| `.progress-xs` | 3px | Micro inline use (Pipeline card) |
+
+Add these to `wwwroot/app.css`:
+```css
+.progress-lg { height: 20px; }
+.progress-md { height: 10px; }
+.progress-sm { height: 6px;  }
+.progress-xs { height: 3px;  }
+```
+
+Color rules:
+- `bg-success` — complete / ≥ 100%
+- `bg-warning` — at risk / overdue / partially tracked
+- `bg-primary` — in progress (default)
+- `bg-danger` — over budget / negative variance
+
+---
+
+### Alerts & Notifications
+
+```razor
+@* Page-level error (dismissible) *@
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible mt-3">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@* Contextual info/nudge — use above the relevant content *@
+<div class="alert alert-info d-flex justify-content-between align-items-center py-2 mb-4">
+    <span>Message text here.</span>
+    <a href="/page" class="btn btn-sm btn-outline-primary ms-3">Action →</a>
+</div>
+```
+
+Rules:
+- Form-level save/delete errors: `alert-danger`, dismissible
+- Onboarding nudges: `alert-info` or `alert-warning`
+- Success confirmations: `alert-success` — auto-dismiss after 3s or make dismissible
+- Never use `.text-danger` alone for error messages visible after a form submit — use the full alert
+
+---
+
+### Delete Confirmation
+
+All deletes must confirm before execution:
+
+```razor
+private async Task DeleteItem(Guid id, string label)
+{
+    var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete \"{label}\"? This cannot be undone.");
+    if (!confirmed) return;
+    try
+    {
+        await Service.DeleteAsync(id, userId);
+        await LoadData();
+    }
+    catch (Exception ex)
+    {
+        errorMessage = $"Could not delete: {ex.Message}";
+    }
+}
+```
+
+Delete button (in tables / list rows):
+```razor
+<button class="btn btn-sm btn-danger" title="Delete" @onclick="() => DeleteItem(item.Id, item.Name)">
+    <svg width="14" height="14" ...><!-- trash icon --></svg>
+</button>
+```
+
+Rules:
+- Always `JS.InvokeAsync<bool>("confirm", ...)` — never delete silently
+- Confirm message format: `Delete "{label}"? This cannot be undone.`
+- Button: `btn btn-sm btn-danger` (not `btn-outline-danger`)
+- Always catch exceptions and surface via `errorMessage`
+
+---
+
+### Loading States
+
+```razor
+@* Page-level loading *@
+@if (items is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+
+@* Submit button with spinner *@
+<button type="submit" class="btn btn-primary btn-sm" disabled="@isSaving">
+    @if (isSaving)
+    {
+        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+    }
+    Save
+</button>
+```
+
+Rules:
+- Use `<p class="text-muted">Loading…</p>` for page-level data loading (no spinner needed)
+- Use inline spinner only on submit buttons that trigger async operations
+- Disable the button while `isSaving == true`
+
+---
 
 ### Color Palette
+
+> **The values below are the single source of truth for all styling decisions. When adding new UI elements, always reach for a color already in this palette. Do not introduce new hex values without updating this guide first.**
+
+Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no native dark mode. All overrides live in `wwwroot/app.css`. The nav rail is always dark regardless of theme.
 
 > **The values below are the single source of truth for all styling decisions. When adding new UI elements, always reach for a color already in this palette. Do not introduce new hex values without updating this guide first.**
 
