@@ -1,0 +1,248 @@
+@page "/flows/new"
+@attribute [Authorize]
+@inject IActualFlowService FlowService
+@inject NavigationManager Nav
+
+<PageTitle>Log Flow — PlanToSave</PageTitle>
+
+<div class="row">
+    <div class="col-md-7 col-lg-5">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/flows">Flows</a></li>
+                <li class="breadcrumb-item active">Log Flow</li>
+            </ol>
+        </nav>
+
+        <h1 class="mb-1">Log a Flow</h1>
+        <p class="text-muted mb-4">Record money moving from one account to another.</p>
+
+        @if (model is not null)
+        {
+            <EditForm Model="model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+
+                @* From Account *@
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">From</label>
+                    <select class="form-select @(fromError ? "is-invalid" : "")"
+                            @onchange="OnFromAccountChanged">
+                        <option value="">— Select source account —</option>
+                        @foreach (var group in fromOptions.GroupBy(a => a.Type))
+                        {
+                            <optgroup label="@group.Key">
+                                @foreach (var a in group)
+                                {
+                                    <option value="@a.Id" selected="@(model.FromAccountId == a.Id)">@a.Name</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    @if (fromError) { <div class="invalid-feedback">Please select a source account.</div> }
+                    @if (fromHint is not null) { <div class="form-text text-muted">@fromHint</div> }
+                </div>
+
+                @* To Account *@
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">To</label>
+                    <select class="form-select @(toError ? "is-invalid" : "")"
+                            @onchange="OnToAccountChanged">
+                        <option value="">— Select destination account —</option>
+                        @foreach (var group in filteredToOptions.GroupBy(a => a.Type))
+                        {
+                            <optgroup label="@group.Key">
+                                @foreach (var a in group)
+                                {
+                                    <option value="@a.Id" selected="@(model.ToAccountId == a.Id)">@a.Name</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    @if (toError) { <div class="invalid-feedback">Please select a destination account.</div> }
+                    @if (toHint is not null) { <div class="form-text text-muted">@toHint</div> }
+                </div>
+
+                @* Amount + Date side by side *@
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <InputNumber @bind-Value="model.Amount" class="form-control" placeholder="0.00" />
+                        </div>
+                        <ValidationMessage For="() => model.Amount" class="text-danger small" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">Date</label>
+                        <input type="date" class="form-control"
+                               value="@model.Date.ToString("yyyy-MM-dd")"
+                               @onchange="e => { if (DateOnly.TryParse(e.Value?.ToString(), out var d)) model.Date = d; }" />
+                    </div>
+                </div>
+
+                @* Description *@
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        Description <span class="fw-normal text-muted">(optional)</span>
+                    </label>
+                    <InputText @bind-Value="model.Description" class="form-control"
+                               placeholder="e.g. March rent, grocery run..." />
+                    <ValidationMessage For="() => model.Description" class="text-danger small" />
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" disabled="@saving">
+                        @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Save Flow
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="SaveAndNew" disabled="@saving">
+                        Save &amp; Log Another
+                    </button>
+                    <a href="/flows" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <p class="text-muted">Loading accounts...</p>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private string userId = "";
+    private CreateActualFlowDto? model;
+    private List<AccountOptionDto> fromOptions = [];
+    private List<AccountOptionDto> toOptions = [];
+    private List<AccountOptionDto> filteredToOptions = [];
+
+    private bool saving = false;
+    private bool addAnother = false;
+    private bool fromError = false;
+    private bool toError = false;
+    private string? fromHint;
+    private string? toHint;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        fromOptions = await FlowService.GetFromAccountOptionsAsync(userId);
+        toOptions = await FlowService.GetToAccountOptionsAsync(userId);
+        filteredToOptions = toOptions;
+        model = new CreateActualFlowDto();
+    }
+
+    private void OnFromAccountChanged(ChangeEventArgs e)
+    {
+        if (model is null) return;
+        fromError = false;
+
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            model.FromAccountId = id;
+            var selected = fromOptions.FirstOrDefault(a => a.Id == id);
+            fromHint = selected?.Type == AccountType.Income
+                ? "Income account — money enters your plan from here."
+                : null;
+
+            // If Income is selected as From, exclude Income from To options
+            // (Income→Income is invalid; but it's already excluded since Income isn't in toOptions)
+            // If the currently selected To is the same account, clear it
+            if (model.ToAccountId == id)
+            {
+                model.ToAccountId = Guid.Empty;
+                toHint = null;
+            }
+        }
+        else
+        {
+            model.FromAccountId = Guid.Empty;
+            fromHint = null;
+        }
+
+        RefreshToOptions();
+    }
+
+    private void OnToAccountChanged(ChangeEventArgs e)
+    {
+        if (model is null) return;
+        toError = false;
+
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            model.ToAccountId = id;
+            var selected = toOptions.FirstOrDefault(a => a.Id == id);
+            toHint = selected?.Type == AccountType.Expense
+                ? "Expense account — money leaves your plan here."
+                : null;
+        }
+        else
+        {
+            model.ToAccountId = Guid.Empty;
+            toHint = null;
+        }
+    }
+
+    private void RefreshToOptions()
+    {
+        // Exclude the selected From account from the To options
+        filteredToOptions = model?.FromAccountId != Guid.Empty
+            ? toOptions.Where(a => a.Id != model!.FromAccountId).ToList()
+            : toOptions;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (!ValidateAccounts()) return;
+        saving = true;
+        errorMessage = null;
+
+        try
+        {
+            await FlowService.CreateAsync(userId, model!);
+            if (addAnother)
+            {
+                model = new CreateActualFlowDto();
+                fromHint = null; toHint = null;
+                filteredToOptions = toOptions;
+                addAnother = false;
+            }
+            else
+            {
+                Nav.NavigateTo("/flows");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private async Task SaveAndNew()
+    {
+        addAnother = true;
+        await HandleSubmit();
+    }
+
+    private bool ValidateAccounts()
+    {
+        fromError = model?.FromAccountId == Guid.Empty || model?.FromAccountId == null;
+        toError   = model?.ToAccountId   == Guid.Empty || model?.ToAccountId   == null;
+        return !fromError && !toError;
+    }
+}

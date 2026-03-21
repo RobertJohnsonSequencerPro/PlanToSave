@@ -1,0 +1,206 @@
+@page "/flows"
+@attribute [Authorize]
+@inject IActualFlowService FlowService
+@inject IAccountService AccountService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<PageTitle>Flows — PlanToSave</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Flows</h1>
+    <a href="/flows/new" class="btn btn-primary">+ Log Flow</a>
+</div>
+
+@* ── Filters ────────────────────────────────────────────────────── *@
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-3">
+                <label class="form-label small fw-semibold mb-1">From</label>
+                <input type="date" class="form-control form-control-sm"
+                       value="@filterFrom.ToString("yyyy-MM-dd")"
+                       @onchange="e => OnFromDateChanged(e.Value?.ToString())" />
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label small fw-semibold mb-1">To</label>
+                <input type="date" class="form-control form-control-sm"
+                       value="@filterTo.ToString("yyyy-MM-dd")"
+                       @onchange="e => OnToDateChanged(e.Value?.ToString())" />
+            </div>
+            <div class="col-sm-4">
+                <label class="form-label small fw-semibold mb-1">Account</label>
+                <select class="form-select form-select-sm" @onchange="e => OnAccountFilterChanged(e.Value?.ToString())">
+                    <option value="">All accounts</option>
+                    @foreach (var account in accountOptions)
+                    {
+                        <option value="@account.Id">@account.Name (@account.Type)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" @onclick="ResetFilters">Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Flow List ───────────────────────────────────────────────────── *@
+@if (flows is null)
+{
+    <p class="text-muted">Loading...</p>
+}
+else if (flows.Count == 0)
+{
+    <div class="alert alert-info">
+        No flows found for the selected period.
+        <a href="/flows/new" class="alert-link ms-1">Log your first flow →</a>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>From</th>
+                        <th></th>
+                        <th>To</th>
+                        <th class="text-end">Amount</th>
+                        <th>Description</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var flow in flows)
+                    {
+                        var flowLabel = flow.Description ?? (flow.FromAccountName + " → " + flow.ToAccountName);
+                        <tr>
+                            <td class="text-nowrap text-muted small">@flow.Date.ToString("MMM d, yyyy")</td>
+                            <td>
+                                <span class="badge @GetTypeBadgeClass(flow.FromAccountType) me-1">@flow.FromAccountType</span>
+                                @flow.FromAccountName
+                            </td>
+                            <td class="text-muted">→</td>
+                            <td>
+                                <span class="badge @GetTypeBadgeClass(flow.ToAccountType) me-1">@flow.ToAccountType</span>
+                                @flow.ToAccountName
+                            </td>
+                            <td class="text-end fw-semibold text-success">@flow.Amount.ToString("C")</td>
+                            <td class="text-muted small">@(flow.Description ?? "—")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => DeleteFlow(flow.Id, flowLabel)">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="4" class="fw-semibold">Total</td>
+                        <td class="text-end fw-bold text-success">@flows.Sum(f => f.Amount).ToString("C")</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <div class="text-muted small mt-2">@flows.Count flow@(flows.Count == 1 ? "" : "s") shown</div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible mt-3">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private string userId = "";
+    private List<ActualFlowDto>? flows;
+    private List<AccountOptionDto> accountOptions = [];
+    private string? errorMessage;
+
+    private DateOnly filterFrom = new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateOnly filterTo = DateOnly.FromDateTime(DateTime.Today);
+    private Guid? filterAccountId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        var fromOptions = await FlowService.GetFromAccountOptionsAsync(userId);
+        var toOptions = await FlowService.GetToAccountOptionsAsync(userId);
+        accountOptions = fromOptions.Union(toOptions).DistinctBy(a => a.Id)
+                                    .OrderBy(a => a.Name).ToList();
+
+        await LoadFlows();
+    }
+
+    private async Task LoadFlows()
+    {
+        flows = await FlowService.GetFlowsAsync(userId, new FlowFilterDto(filterFrom, filterTo, filterAccountId));
+    }
+
+    private async Task OnFromDateChanged(string? value)
+    {
+        if (DateOnly.TryParse(value, out var d)) filterFrom = d;
+        await LoadFlows();
+    }
+
+    private async Task OnToDateChanged(string? value)
+    {
+        if (DateOnly.TryParse(value, out var d)) filterTo = d;
+        await LoadFlows();
+    }
+
+    private async Task OnAccountFilterChanged(string? value)
+    {
+        filterAccountId = Guid.TryParse(value, out var id) ? id : null;
+        await LoadFlows();
+    }
+
+    private async Task ResetFilters()
+    {
+        filterFrom = new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1);
+        filterTo = DateOnly.FromDateTime(DateTime.Today);
+        filterAccountId = null;
+        await LoadFlows();
+    }
+
+    private async Task DeleteFlow(Guid id, string label)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete this flow: \"{label}\"?");
+        if (!confirmed) return;
+
+        try
+        {
+            await FlowService.DeleteAsync(id, userId);
+            await LoadFlows();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Could not delete flow: {ex.Message}";
+        }
+    }
+
+    private static string GetTypeBadgeClass(AccountType type) => type switch
+    {
+        AccountType.Income     => "bg-success",
+        AccountType.Expense    => "bg-danger",
+        AccountType.Checking   => "bg-primary",
+        AccountType.Savings    => "bg-info text-dark",
+        AccountType.Credit     => "bg-warning text-dark",
+        AccountType.Investment => "bg-secondary",
+        _                      => "bg-light text-dark"
+    };
+}

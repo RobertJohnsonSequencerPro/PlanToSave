@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PlanToSave.Application.Accounts;
+using PlanToSave.Application.Flows;
 using PlanToSave.Web.Components;
 using PlanToSave.Web.Components.Account;
 using PlanToSave.Web.Data;
@@ -75,6 +76,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IActualFlowService, ActualFlowService>();
 
 var app = builder.Build();
 
