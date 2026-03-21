@@ -1,5 +1,11 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-size: 1.0625rem; /* ≈17 px — slightly larger base for readability */
 }
 
 a, .btn-link {
@@ -51,12 +57,45 @@ h1:focus {
 }
 
 /* ────────────────────────────────────────────────────────────
-   LIGHT MODE: improved contrast
-   Bootstrap's default .text-muted (#6c757d on white) is 4.48:1,
-   just below WCAG AA. Bumped to #5a6472 = ~5.5:1.
+   LIGHT MODE: accessible colour palette
+   Bootstrap 5's vivid warning (#ffc107) and info (#0dcaf0)
+   have very low contrast on white backgrounds (<2:1).
+   All replacements below meet WCAG AA (≥4.5:1 on white).
+   .text-muted: Bootstrap default #6c757d = 4.48:1 → bumped to
+   #5a6472 = ~5.5:1.
 ──────────────────────────────────────────────────────────── */
 .text-muted {
     color: #5a6472 !important;
+}
+
+/* text-warning: #ffc107 on white = 1.07:1  →  #92400e = 9.3:1 */
+.text-warning {
+    color: #92400e !important;
+}
+
+/* text-info: #0dcaf0 on white = 1.7:1  →  #0c4a6e = 9.5:1 */
+.text-info {
+    color: #0c4a6e !important;
+}
+
+/* bg-warning: Bootstrap yellow → dark amber (#b45309) + white text = 5.4:1 */
+.bg-warning {
+    background-color: #b45309 !important;
+}
+/* Ensure white text even when .text-dark is also present */
+.bg-warning,
+.bg-warning.text-dark {
+    color: #fff !important;
+}
+
+/* bg-info: vivid cyan → accessible teal (#0e7490) + white text = 4.6:1 */
+.bg-info {
+    background-color: #0e7490 !important;
+}
+/* Ensure white text even when .text-dark is also present */
+.bg-info,
+.bg-info.text-dark {
+    color: #fff !important;
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -253,4 +292,28 @@ h1:focus {
 /* ── Badges with light backgrounds ──────────────────────── */
 [data-theme="dark"] .badge.bg-light      { background-color: #353d52 !important; color: #dde4ec !important; }
 [data-theme="dark"] .badge.text-dark     { color: #dde4ec !important; }
+
+/* ── Text colours: warning & info on dark backgrounds ───── */
+/* text-warning: bright amber (#fcd34d) — 9.7:1 on #1a1d24 */
+[data-theme="dark"] .text-warning { color: #fcd34d !important; }
+/* text-info: sky blue (#7dd3fc) — 9.5:1 on #1a1d24 */
+[data-theme="dark"] .text-info    { color: #7dd3fc !important; }
+
+/* ── Warning/info backgrounds in dark mode ───────────────── */
+/* Keep consistent accessible amber for bg-warning */
+[data-theme="dark"] .bg-warning {
+    background-color: #b45309 !important;
+}
+[data-theme="dark"] .bg-warning,
+[data-theme="dark"] .bg-warning.text-dark {
+    color: #fff !important;
+}
+/* Keep accessible teal for bg-info */
+[data-theme="dark"] .bg-info {
+    background-color: #0e7490 !important;
+}
+[data-theme="dark"] .bg-info,
+[data-theme="dark"] .bg-info.text-dark {
+    color: #fff !important;
+}
 
