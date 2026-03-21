@@ -3,6 +3,26 @@ using PlanToSave.Domain.Enums;
 
 namespace PlanToSave.Application.Accounts;
 
+/// <summary>A single data point on a balance-over-time chart.</summary>
+public record BalanceDataPoint(DateOnly Date, decimal Balance, bool IsProjected);
+
+/// <summary>Historical and projected monthly balances for a stock account.</summary>
+public record AccountForecastDto(
+    Guid AccountId,
+    string Name,
+    AccountType Type,
+    decimal CurrentBalance,
+    List<BalanceDataPoint> DataPoints);
+
+/// <summary>A transaction (actual or planned) touching a specific account.</summary>
+public record AccountTransactionDto(
+    DateOnly Date,
+    decimal Amount,
+    bool IsInflow,
+    string CounterAccountName,
+    string? Description,
+    bool IsProjected);
+
 public record AccountDto(
     Guid Id,
     string Name,

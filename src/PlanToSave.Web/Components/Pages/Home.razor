@@ -148,26 +148,49 @@ else
         <div class="row g-3 mb-4">
             @foreach (var b in balances)
             {
+                var sparkData = forecasts.GetValueOrDefault(b.Id)?.DataPoints ?? [];
                 <div class="col-sm-6 col-lg-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="fw-semibold">@b.Name</span>
-                                <span class="badge @GetTypeBadgeClass(b.Type) ms-2">@b.Type</span>
-                            </div>
-                            <div class="fs-4 fw-bold @GetBalanceClass(b.Balance)">
-                                @FormatCurrency(b.Balance)
-                            </div>
-                            @if (b.AccruedInterest != 0)
-                            {
-                                var interestClass = b.AccruedInterest > 0 ? "text-success" : "text-danger";
-                                var interestSign  = b.AccruedInterest > 0 ? "+" : "";
-                                <div class="small @interestClass mt-1" title="Estimated accrued interest since last baseline">
-                                    ~@(interestSign)@FormatCurrency(b.AccruedInterest) interest accruing
+                    <a href="/accounts/@b.Id/forecast" class="text-decoration-none text-reset">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="fw-semibold">@b.Name</span>
+                                    <span class="badge @GetTypeBadgeClass(b.Type) ms-2">@b.Type</span>
                                 </div>
-                            }
+                                <div class="fs-4 fw-bold @GetBalanceClass(b.Balance)">
+                                    @FormatCurrency(b.Balance)
+                                </div>
+                                @if (b.AccruedInterest != 0)
+                                {
+                                    var interestClass = b.AccruedInterest > 0 ? "text-success" : "text-danger";
+                                    var interestSign  = b.AccruedInterest > 0 ? "+" : "";
+                                    <div class="small @interestClass mt-1" title="Estimated accrued interest since last baseline">
+                                        ~@(interestSign)@FormatCurrency(b.AccruedInterest) interest accruing
+                                    </div>
+                                }
+                                @if (sparkData.Count > 1)
+                                {
+                                    <div class="mt-2">
+                                        <SparklineChart DataPoints="sparkData" Width="220" Height="50" />
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1" style="font-size:0.65rem;color:#5a6472;">
+                                        <span>@sparkData.First().Date.ToString("MMM yy")</span>
+                                        <span class="text-muted" style="font-size:0.65rem;">
+                                            <svg width="10" height="6">
+                                                <line x1="0" y1="3" x2="10" y2="3" stroke="#1b6ec2" stroke-width="1.5" stroke-linecap="round"/>
+                                            </svg>
+                                            actual
+                                            <svg width="10" height="6" class="ms-1">
+                                                <line x1="0" y1="3" x2="10" y2="3" stroke="#b45309" stroke-width="1.5" stroke-dasharray="3,2" stroke-linecap="round"/>
+                                            </svg>
+                                            forecast
+                                        </span>
+                                        <span>@sparkData.Last().Date.ToString("MMM yy")</span>
+                                    </div>
+                                }
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             }
         </div>
@@ -183,6 +206,7 @@ else
     private Task<AuthenticationState> AuthState { get; set; } = null!;
 
     private List<AccountBalanceDto>? balances;
+    private Dictionary<Guid, AccountForecastDto> forecasts = [];
     private List<GoalDto> activeGoals = [];
     private List<IdeaDto> allIdeas = [];
     private MonthlyPlanDetailDto? currentPlan;
@@ -202,6 +226,15 @@ else
         var userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
         balances    = await AccountService.GetBalancesAsync(userId);
+
+        // Load forecasts for each stock account (sequential to avoid DbContext concurrency)
+        foreach (var b in balances)
+        {
+            var f = await AccountService.GetAccountForecastAsync(userId, b.Id);
+            if (f is not null)
+                forecasts[b.Id] = f;
+        }
+
         activeGoals = (await GoalService.GetGoalsAsync(userId)).Where(g => !g.IsComplete).ToList();
         currentPlan = await PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
         allIdeas    = await IdeaService.GetIdeasAsync(userId);

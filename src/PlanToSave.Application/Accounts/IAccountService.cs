@@ -13,4 +13,20 @@ public interface IAccountService
     Task<InterestRuleDto?> GetInterestRuleAsync(string userId, Guid accountId);
     Task SetInterestRuleAsync(string userId, Guid accountId, SetInterestRuleDto dto);
     Task DeleteInterestRuleAsync(string userId, Guid accountId);
+
+    /// <summary>
+    /// Returns monthly balance data points for a stock account:
+    /// end-of-month actual balances for the past <paramref name="pastMonths"/> months,
+    /// the current balance for today, and projected end-of-month balances for the
+    /// next <paramref name="futureMonths"/> months based on planned flows.
+    /// </summary>
+    Task<AccountForecastDto?> GetAccountForecastAsync(
+        string userId, Guid accountId, int pastMonths = 6, int futureMonths = 6);
+
+    /// <summary>
+    /// Returns all actual and planned transactions that touch a stock account,
+    /// ordered by date. Planned (future) transactions are flagged with IsProjected = true.
+    /// </summary>
+    Task<List<AccountTransactionDto>> GetAccountTransactionsAsync(
+        string userId, Guid accountId);
 }
