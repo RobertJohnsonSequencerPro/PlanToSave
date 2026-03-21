@@ -3,6 +3,7 @@
 @inject IGoalService GoalService
 @inject IAccountService AccountService
 @inject IIdeaService IdeaService
+@inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthState
 
 <PageTitle>Goals</PageTitle>
@@ -238,6 +239,22 @@ else
             stockAccounts = accounts.Where(a => a.IsStockAccount && !a.IsArchived).ToList();
             backlogIdeas  = await IdeaService.GetIdeasAsync(userId,
                 new IdeaFilterDto { Status = IdeaStatus.Backlog });
+
+            // Pre-open form if navigated from Ideas page with ?ideaId=
+            var rawQuery = new Uri(NavigationManager.Uri).Query.TrimStart('?');
+            foreach (var segment in rawQuery.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var eq = segment.IndexOf('=');
+                if (eq > 0
+                    && segment[..eq].Equals("ideaId", StringComparison.OrdinalIgnoreCase)
+                    && Guid.TryParse(Uri.UnescapeDataString(segment[(eq + 1)..]), out var preId)
+                    && backlogIdeas.Any(i => i.Id == preId))
+                {
+                    showAddForm = true;
+                    newGoal.IdeaId = preId;
+                    break;
+                }
+            }
         }
         catch (Exception ex)
         {

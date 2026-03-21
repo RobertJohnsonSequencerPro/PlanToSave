@@ -212,6 +212,10 @@ else
                                         title="Schedule this idea">
                                     Plan This
                                 </button>
+                                <a href="/goals?ideaId=@idea.Id" class="btn btn-sm btn-outline-success me-1"
+                                   title="Create a savings goal toward this idea">
+                                    Save for this →
+                                </a>
                             }
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteIdea(idea.Id)" title="Delete" aria-label="Delete idea">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
