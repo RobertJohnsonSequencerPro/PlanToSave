@@ -108,9 +108,9 @@ h1:focus {
     /* Override Bootstrap 5.1 CSS variables so components that use var(--bs-*)
        automatically get dark values without needing individual class overrides. */
     --bs-body-bg:          #1a1d24;
-    --bs-body-color:       #eef2f7;
+    --bs-body-color:       #fff;
     --bs-border-color:     #3a4258;
-    --bs-secondary-color:  #c8d4e0;
+    --bs-secondary-color:  rgba(255,255,255,0.6);
     --bs-tertiary-bg:      #252c3d;
     --bs-card-bg:          #21272f;
     --bs-card-border-color:#3a4258;
@@ -119,7 +119,7 @@ h1:focus {
 [data-theme="dark"] body {
     color-scheme: dark;
     background-color: #1a1d24;
-    color: #eef2f7;
+    color: #fff;
 }
 
 /* Scrollbars (webkit) */
@@ -127,15 +127,15 @@ h1:focus {
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #353d52; border-radius: 4px; }
 
 /* ── Text utilities ──────────────────────────────────────── */
-[data-theme="dark"] .text-muted     { color: #c8d4e0 !important; }
-[data-theme="dark"] .text-dark      { color: #eef2f7 !important; }
-[data-theme="dark"] .text-body      { color: #eef2f7 !important; }
-[data-theme="dark"] .text-secondary { color: #c8d4e0 !important; }
+[data-theme="dark"] .text-muted     { color: rgba(255,255,255,0.6) !important; }
+[data-theme="dark"] .text-dark      { color: #fff !important; }
+[data-theme="dark"] .text-body      { color: #fff !important; }
+[data-theme="dark"] .text-secondary { color: rgba(255,255,255,0.6) !important; }
 
 [data-theme="dark"] a,
-[data-theme="dark"] .btn-link       { color: #74b8ff; }
+[data-theme="dark"] .btn-link       { color: rgba(255,255,255,0.85); }
 [data-theme="dark"] a:hover,
-[data-theme="dark"] .btn-link:hover { color: #a2d0ff; }
+[data-theme="dark"] .btn-link:hover { color: #fff; }
 
 /* ── Background utilities ────────────────────────────────── */
 [data-theme="dark"] .bg-white  { background-color: #21272f !important; }
@@ -146,24 +146,24 @@ h1:focus {
 [data-theme="dark"] .card {
     background-color: #21272f;
     border-color: #3a4258;
-    color: #eef2f7;
+    color: #fff;
 }
 [data-theme="dark"] .card-header {
     background-color: rgba(255,255,255,.04);
     border-bottom-color: #3a4258;
-    color: #eef2f7;
+    color: #fff;
 }
 [data-theme="dark"] .card-footer {
     background-color: rgba(255,255,255,.03);
     border-top-color: #3a4258;
-    color: #eef2f7;
+    color: #fff;
 }
 
 /* ── Modals ──────────────────────────────────────────────── */
 [data-theme="dark"] .modal-content {
     background-color: #21272f;
     border-color: #3a4258;
-    color: #eef2f7;
+    color: #fff;
 }
 [data-theme="dark"] .modal-header { border-bottom-color: #3a4258; }
 [data-theme="dark"] .modal-footer { border-top-color: #3a4258; }
@@ -173,24 +173,24 @@ h1:focus {
 
 /* ── Tables ──────────────────────────────────────────────── */
 [data-theme="dark"] .table {
-    color: #eef2f7;
+    color: #fff;
     --bs-table-bg: transparent;
     --bs-table-accent-bg: rgba(255,255,255,.03);
     --bs-table-striped-bg: rgba(255,255,255,.03);
-    --bs-table-striped-color: #eef2f7;
+    --bs-table-striped-color: #fff;
     --bs-table-hover-bg: rgba(255,255,255,.05);
-    --bs-table-hover-color: #eef2f7;
+    --bs-table-hover-color: #fff;
     --bs-table-border-color: #3a4258;
 }
 [data-theme="dark"] .table > :not(caption) > * > * {
     border-bottom-color: #3a4258;
 }
-[data-theme="dark"] .table th { color: #eef2f7; }
+[data-theme="dark"] .table th { color: #fff; }
 [data-theme="dark"] .table-light,
 [data-theme="dark"] .table-light > th,
 [data-theme="dark"] .table-light > td {
     background-color: #252c3d !important;
-    color: #dde4ec !important;
+    color: #fff !important;
     border-color: #3a4258 !important;
 }
 
@@ -198,14 +198,14 @@ h1:focus {
 [data-theme="dark"] .form-control,
 [data-theme="dark"] .form-select {
     background-color: #252c3d;
-    color: #eef2f7;
+    color: #fff;
     border-color: #404859;
 }
 [data-theme="dark"] .form-control::placeholder { color: #7a8da0; }
 [data-theme="dark"] .form-control:focus,
 [data-theme="dark"] .form-select:focus {
     background-color: #252c3d;
-    color: #eef2f7;
+    color: #fff;
     border-color: #5b6cad;
     box-shadow: 0 0 0 0.1rem transparent, 0 0 0 0.25rem rgba(91,108,173,.3);
 }
@@ -223,11 +223,11 @@ h1:focus {
     background-color: #4f68d4;
     border-color: #4f68d4;
 }
-[data-theme="dark"] .form-label { color: #d8e2ec; }
-[data-theme="dark"] .col-form-label { color: #d8e2ec; }
+[data-theme="dark"] .form-label { color: #fff; }
+[data-theme="dark"] .col-form-label { color: #fff; }
 [data-theme="dark"] .input-group-text {
     background-color: #1e253a;
-    color: #eef2f7;
+    color: #fff;
     border-color: #404859;
 }
 [data-theme="dark"] option {
@@ -255,12 +255,12 @@ h1:focus {
 [data-theme="dark"] .list-group-item {
     background-color: #21272f;
     border-color: #3a4258;
-    color: #eef2f7;
+    color: #fff;
 }
 [data-theme="dark"] .list-group-item-action:hover,
 [data-theme="dark"] .list-group-item-action:focus {
     background-color: #2a3140;
-    color: #eef2f7;
+    color: #fff;
 }
 [data-theme="dark"] .list-group-item.active {
     background-color: #3d5acc;
@@ -275,7 +275,7 @@ h1:focus {
     background-color: #21272f;
     border-color: #3a4258;
 }
-[data-theme="dark"] .dropdown-item { color: #eef2f7; }
+[data-theme="dark"] .dropdown-item { color: #fff; }
 [data-theme="dark"] .dropdown-item:hover,
 [data-theme="dark"] .dropdown-item:focus { background-color: rgba(255,255,255,.07); color: #fff; }
 [data-theme="dark"] .dropdown-divider { border-color: #3a4258; }
@@ -309,13 +309,13 @@ h1:focus {
 [data-theme="dark"] .text-info    { color: #7dd3fc !important; }
 
 /* ── Warning/info backgrounds in dark mode ───────────────── */
-/* Keep consistent accessible amber for bg-warning */
+/* Yellow badge matching the Ideas stage border color */
 [data-theme="dark"] .bg-warning {
-    background-color: #b45309 !important;
+    background-color: #ffc107 !important;
+    color: #111 !important;
 }
-[data-theme="dark"] .bg-warning,
 [data-theme="dark"] .bg-warning.text-dark {
-    color: #fff !important;
+    color: #111 !important;
 }
 /* Keep accessible teal for bg-info */
 [data-theme="dark"] .bg-info {
