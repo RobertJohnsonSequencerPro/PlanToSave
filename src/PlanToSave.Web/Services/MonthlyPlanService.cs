@@ -242,6 +242,24 @@ public class MonthlyPlanService(ApplicationDbContext db) : IMonthlyPlanService
         return monthsCreated;
     }
 
+    public async Task<List<GoalContributionDto>> GetGoalContributionsForMonthAsync(string userId, int year, int month)
+    {
+        return await db.PlannedFlows
+            .Where(pf => pf.MonthlyPlan.UserId == userId
+                && pf.MonthlyPlan.Year == year
+                && pf.MonthlyPlan.Month == month
+                && pf.GoalId != null)
+            .Select(pf => new GoalContributionDto(
+                pf.Id,
+                pf.GoalId!.Value,
+                pf.Goal!.Name,
+                pf.Amount,
+                pf.Description,
+                pf.FromAccount.Name,
+                pf.ToAccount.Name))
+            .ToListAsync();
+    }
+
     // ──────────────────────────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────────────────────────

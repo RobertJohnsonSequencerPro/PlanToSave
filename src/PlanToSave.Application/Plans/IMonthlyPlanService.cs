@@ -18,4 +18,9 @@ public interface IMonthlyPlanService
     /// Returns the number of monthly plans created or updated.
     /// </summary>
     Task<int> GenerateGoalScheduleAsync(string userId, GenerateGoalScheduleDto dto);
+
+    /// <summary>
+    /// Returns all goal-tagged planned flows for the given month, for display on the calendar.
+    /// </summary>
+    Task<List<GoalContributionDto>> GetGoalContributionsForMonthAsync(string userId, int year, int month);
 }

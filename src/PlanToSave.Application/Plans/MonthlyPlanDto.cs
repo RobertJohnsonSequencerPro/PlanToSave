@@ -74,3 +74,15 @@ public class GenerateGoalScheduleDto
     /// </summary>
     public bool ReplaceExisting { get; set; } = true;
 }
+
+/// <summary>
+/// A goal-tagged planned flow, used to surface goal contributions on the calendar.
+/// </summary>
+public record GoalContributionDto(
+    Guid PlannedFlowId,
+    Guid GoalId,
+    string GoalName,
+    decimal Amount,
+    string? Description,
+    string FromAccountName,
+    string ToAccountName);

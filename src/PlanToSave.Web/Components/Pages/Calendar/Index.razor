@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject IActivityPlanService ActivityPlanService
 @inject IGoalService GoalService
+@inject IMonthlyPlanService PlanService
 @inject ICalendarEventService CalendarEventService
 @inject AuthenticationStateProvider AuthState
 
@@ -37,13 +38,14 @@ else
     <div class="cal-grid">
                         @foreach (var dayNum in calendarCells)
             {
-                var evs        = dayNum > 0 && eventsByDay.ContainsKey(dayNum)  ? eventsByDay[dayNum]  : [];
-                var goalEvs    = dayNum > 0 && goalsByDay.ContainsKey(dayNum)   ? goalsByDay[dayNum]   : [];
-                var customEvs  = dayNum > 0 && customByDay.ContainsKey(dayNum)  ? customByDay[dayNum]  : [];
+                var evs        = dayNum > 0 && eventsByDay.ContainsKey(dayNum)   ? eventsByDay[dayNum]   : [];
+                var goalEvs    = dayNum > 0 && goalsByDay.ContainsKey(dayNum)    ? goalsByDay[dayNum]    : [];
+                var contribs   = dayNum > 0 && contribsByDay.ContainsKey(dayNum) ? contribsByDay[dayNum] : [];
+                var customEvs  = dayNum > 0 && customByDay.ContainsKey(dayNum)   ? customByDay[dayNum]   : [];
                 bool isToday = dayNum > 0 && dayNum == todayDay && year == todayYear && month == todayMonth;
                 bool isSelected = dayNum > 0 && dayNum == selectedDay;
-                int shownCount = Math.Min(evs.Count, 2) + Math.Min(goalEvs.Count, 1) + Math.Min(customEvs.Count, 1);
-                int totalCount = evs.Count + goalEvs.Count + customEvs.Count;
+                int shownCount = Math.Min(evs.Count, 2) + Math.Min(goalEvs.Count, 1) + Math.Min(contribs.Count, 1) + Math.Min(customEvs.Count, 1);
+                int totalCount = evs.Count + goalEvs.Count + contribs.Count + customEvs.Count;
 
                 <div class="cal-cell @(dayNum == 0 ? "cal-empty" : "") @(isToday ? "cal-today" : "") @(isSelected ? "cal-selected" : "")"
                      @onclick="() => SelectDay(dayNum)">
@@ -57,6 +59,10 @@ else
                         @foreach (var g in goalEvs.Take(1))
                         {
                             <div class="cal-event cal-event-goal">🎯 @g.Name</div>
+                        }
+                        @foreach (var c in contribs.Take(1))
+                        {
+                            <div class="cal-event cal-event-contrib">💰 @c.GoalName</div>
                         }
                         @foreach (var ce in customEvs.Take(1))
                         {
@@ -74,9 +80,10 @@ else
     @if (selectedDay > 0)
     {
         var selectedDate   = new DateOnly(year, month, selectedDay);
-        var selectedEvents = eventsByDay.TryGetValue(selectedDay, out var ae) ? ae : [];
-        var selectedGoals  = goalsByDay.TryGetValue(selectedDay, out var ag)  ? ag : [];
-        var selectedCustom = customByDay.TryGetValue(selectedDay, out var ac)  ? ac : [];
+        var selectedEvents = eventsByDay.TryGetValue(selectedDay, out var ae)   ? ae : [];
+        var selectedGoals  = goalsByDay.TryGetValue(selectedDay, out var ag)    ? ag : [];
+        var selectedContribs = contribsByDay.TryGetValue(selectedDay, out var ak) ? ak : [];
+        var selectedCustom = customByDay.TryGetValue(selectedDay, out var ac)   ? ac : [];
         <div class="card mt-4 border-primary">
             <div class="card-header d-flex justify-content-between align-items-center py-2">
                 <span class="fw-semibold">@selectedDate.ToString("dddd, MMMM d, yyyy")</span>
@@ -122,7 +129,7 @@ else
                 </div>
             }
 
-            @if (selectedEvents.Count == 0 && selectedGoals.Count == 0 && selectedCustom.Count == 0 && !showAddForm)
+            @if (selectedEvents.Count == 0 && selectedGoals.Count == 0 && selectedCustom.Count == 0 && selectedContribs.Count == 0 && !showAddForm)
             {
                 <div class="card-body text-center text-muted small py-3">
                     Nothing scheduled on @selectedDate.ToString("MMMM d"). Click "+ Add event" to note something.
@@ -176,6 +183,22 @@ else
                         </div>
                     </li>
                 }
+                @foreach (var c in selectedContribs)
+                {
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+                        <div>
+                            <span class="badge bg-success me-2">💰 Goal Contribution</span>
+                            <a href="/goals" class="fw-semibold text-decoration-none">@c.GoalName</a>
+                            <div class="text-muted small mt-1">
+                                @c.Amount.ToString("C") from @c.FromAccountName → @c.ToAccountName
+                                @if (!string.IsNullOrWhiteSpace(c.Description))
+                                {
+                                    <span class="ms-1">— @c.Description</span>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
             </ul>
         </div>
     }
@@ -184,6 +207,7 @@ else
 @code {
     private List<ActivityPlanDto>? plans;
     private List<GoalDto> goalsAll = [];
+    private List<GoalContributionDto> goalContribs = [];
     private List<CalendarEventDto> customEvents = [];
     private string userId = "";
 
@@ -191,6 +215,7 @@ else
     private List<int> calendarCells = [];
     private Dictionary<int, List<ActivityPlanDto>> eventsByDay = new();
     private Dictionary<int, List<GoalDto>> goalsByDay = new();
+    private Dictionary<int, List<GoalContributionDto>> contribsByDay = new();
     private Dictionary<int, List<CalendarEventDto>> customByDay = new();
 
     private bool showAddForm;
@@ -216,6 +241,7 @@ else
     {
         plans        = await ActivityPlanService.GetPlansForMonthAsync(userId, year, month);
         goalsAll     = await GoalService.GetGoalsAsync(userId);
+        goalContribs = await PlanService.GetGoalContributionsForMonthAsync(userId, year, month);
         customEvents = await CalendarEventService.GetForMonthAsync(userId, year, month);
         BuildGrid();
     }
@@ -233,6 +259,11 @@ else
             .Where(g => !g.IsComplete && g.TargetDate.Year == year && g.TargetDate.Month == month)
             .GroupBy(g => g.TargetDate.Day)
             .ToDictionary(g => g.Key, g => g.ToList());
+
+        // Goal contributions have no specific day — show them on day 1 of the month
+        contribsByDay = goalContribs.Count > 0
+            ? new Dictionary<int, List<GoalContributionDto>> { [1] = goalContribs }
+            : new();
 
         customByDay = customEvents
             .GroupBy(e => e.Date.Day)

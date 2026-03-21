@@ -91,6 +91,11 @@
     color: #664d03;
 }
 
+.cal-event-contrib {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
 .cal-event-custom {
     background-color: #e0f2fe;
     color: #0c4a6e;
