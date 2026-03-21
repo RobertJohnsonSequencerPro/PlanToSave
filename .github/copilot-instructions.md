@@ -463,10 +463,6 @@ Rules:
 
 Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no native dark mode. All overrides live in `wwwroot/app.css`. The nav rail is always dark regardless of theme.
 
-> **The values below are the single source of truth for all styling decisions. When adding new UI elements, always reach for a color already in this palette. Do not introduce new hex values without updating this guide first.**
-
-Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no native dark mode. All overrides live in `wwwroot/app.css`. The nav rail is always dark regardless of theme.
-
 #### Brand / Semantic Colors (both modes)
 
 | Role | Hex | Usage |
