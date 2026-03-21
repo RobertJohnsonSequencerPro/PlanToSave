@@ -105,7 +105,8 @@ public class MonthlyPlanService(ApplicationDbContext db) : IMonthlyPlanService
             FromAccountId = dto.FromAccountId,
             ToAccountId = dto.ToAccountId,
             Amount = dto.Amount,
-            Description = dto.Description
+            Description = dto.Description,
+            GoalId = dto.GoalId
         };
         db.PlannedFlows.Add(pf);
         await db.SaveChangesAsync();
@@ -165,6 +166,80 @@ public class MonthlyPlanService(ApplicationDbContext db) : IMonthlyPlanService
             });
         }
         await db.SaveChangesAsync();
+    }
+
+    public async Task<int> GenerateGoalScheduleAsync(string userId, GenerateGoalScheduleDto dto)
+    {
+        // Validate goal ownership
+        var goal = await db.Goals
+            .FirstOrDefaultAsync(g => g.Id == dto.GoalId && g.UserId == userId)
+            ?? throw new InvalidOperationException("Goal not found.");
+
+        // Validate accounts
+        var from = await db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.FromAccountId && a.UserId == userId)
+            ?? throw new InvalidOperationException("Source account not found.");
+        var to = await db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.ToAccountId && a.UserId == userId)
+            ?? throw new InvalidOperationException("Target account not found.");
+
+        if (from.Type == AccountType.Expense)
+            throw new InvalidOperationException("Expense accounts cannot be a flow source.");
+        if (to.Type == AccountType.Income)
+            throw new InvalidOperationException("Income accounts cannot be a flow destination.");
+        if (dto.FromAccountId == dto.ToAccountId)
+            throw new InvalidOperationException("From and To accounts must be different.");
+
+        // Optionally remove existing goal-tagged planned flows for this goal
+        if (dto.ReplaceExisting)
+        {
+            var existing = await db.PlannedFlows
+                .Where(pf => pf.GoalId == dto.GoalId && pf.MonthlyPlan.UserId == userId)
+                .ToListAsync();
+            db.PlannedFlows.RemoveRange(existing);
+            await db.SaveChangesAsync();
+        }
+
+        int monthsCreated = 0;
+        var cursor = new DateOnly(dto.StartYear, dto.StartMonth, 1);
+        var endMonth = new DateOnly(dto.EndYear, dto.EndMonth, 1);
+
+        while (cursor <= endMonth)
+        {
+            // GetOrCreate the monthly plan for this month — sequential awaits required
+            var plan = await db.MonthlyPlans
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.Year == cursor.Year && p.Month == cursor.Month);
+
+            if (plan is null)
+            {
+                plan = new MonthlyPlan
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Year = cursor.Year,
+                    Month = cursor.Month,
+                    Status = MonthlyPlanStatus.Draft,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.MonthlyPlans.Add(plan);
+                await db.SaveChangesAsync();
+            }
+
+            db.PlannedFlows.Add(new PlannedFlow
+            {
+                Id = Guid.NewGuid(),
+                MonthlyPlanId = plan.Id,
+                FromAccountId = dto.FromAccountId,
+                ToAccountId = dto.ToAccountId,
+                Amount = dto.MonthlyAmount,
+                Description = dto.Description ?? $"{goal.Name} — contribution",
+                GoalId = dto.GoalId
+            });
+            await db.SaveChangesAsync();
+
+            monthsCreated++;
+            cursor = cursor.AddMonths(1);
+        }
+
+        return monthsCreated;
     }
 
     // ──────────────────────────────────────────────────────────────────

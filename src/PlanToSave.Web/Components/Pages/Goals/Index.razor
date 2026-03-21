@@ -3,6 +3,7 @@
 @inject IGoalService GoalService
 @inject IAccountService AccountService
 @inject IIdeaService IdeaService
+@inject IMonthlyPlanService PlanService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthState
 
@@ -17,6 +18,110 @@
         </button>
     </div>
 </div>
+
+@if (showScheduleModal && scheduleGoal is not null)
+{
+    var remaining = Math.Max(0, scheduleGoal.TargetAmount - scheduleGoal.SavedAmount);
+    var totalMonths = scheduleMonths;
+    var preview = totalMonths > 0 ? scheduleDto.MonthlyAmount * totalMonths : 0;
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Generate Contribution Schedule — @scheduleGoal.Name</h5>
+                    <button type="button" class="btn-close" @onclick="CloseScheduleModal"></button>
+                </div>
+                <EditForm Model="scheduleDto" OnValidSubmit="SaveSchedule">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
+                            Remaining to save: <strong>@remaining.ToString("C")</strong>
+                            @if (scheduleGoal.SavedAmount > 0)
+                            {
+                                <span class="text-muted ms-2">(@scheduleGoal.SavedAmount.ToString("C") already saved of @scheduleGoal.TargetAmount.ToString("C") target)</span>
+                            }
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold">Monthly amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="scheduleDto.MonthlyAmount" class="form-control" step="0.01" min="0.01" />
+                                </div>
+                                <ValidationMessage For="() => scheduleDto.MonthlyAmount" class="text-danger small" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold">Start month</label>
+                                <input type="month" class="form-control"
+                                       value="@($"{scheduleDto.StartYear:D4}-{scheduleDto.StartMonth:D2}")"
+                                       min="@($"{DateTime.Today.Year:D4}-{DateTime.Today.Month:D2}")"
+                                       @onchange="e => ParseMonthInput(e.Value?.ToString(), isStart: true)" />
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-semibold">End month</label>
+                                <input type="month" class="form-control"
+                                       value="@($"{scheduleDto.EndYear:D4}-{scheduleDto.EndMonth:D2}")"
+                                       min="@($"{scheduleDto.StartYear:D4}-{scheduleDto.StartMonth:D2}")"
+                                       @onchange="e => ParseMonthInput(e.Value?.ToString(), isStart: false)" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Description <span class="fw-normal text-muted">(optional)</span></label>
+                            <InputText @bind-Value="scheduleDto.Description" class="form-control"
+                                       placeholder="@($"{scheduleGoal.Name} — contribution")" />
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <InputCheckbox @bind-Value="scheduleDto.ReplaceExisting" class="form-check-input" id="replaceChk" />
+                            <label class="form-check-label" for="replaceChk">
+                                Replace existing planned contributions for this goal
+                            </label>
+                            <div class="form-text">If unchecked, new entries are added alongside any that already exist.</div>
+                        </div>
+
+                        @if (scheduleMonths > 0)
+                        {
+                            <div class="alert @(preview >= remaining ? "alert-success" : "alert-warning") py-2" style="font-size:.875rem">
+                                This will create <strong>@scheduleMonths monthly contribution@(scheduleMonths == 1 ? "" : "s")</strong>
+                                of <strong>@scheduleDto.MonthlyAmount.ToString("C")</strong>
+                                from <strong>@(new DateOnly(scheduleDto.StartYear, scheduleDto.StartMonth, 1).ToString("MMM yyyy"))</strong>
+                                to <strong>@(new DateOnly(scheduleDto.EndYear, scheduleDto.EndMonth, 1).ToString("MMM yyyy"))</strong>,
+                                totalling <strong>@preview.ToString("C")</strong>.
+                                @if (preview < remaining)
+                                {
+                                    <span class="text-warning"> That is @((remaining - preview).ToString("C")) short of the remaining target.</span>
+                                }
+                                else
+                                {
+                                    <span class="text-success"> That covers the remaining target.</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-danger small">End month must be the same as or after the start month.</div>
+                        }
+
+                        @if (scheduleError is not null)
+                        {
+                            <div class="text-danger small mt-2">@scheduleError</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseScheduleModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" disabled="@(scheduleMonths <= 0 || savingSchedule)">
+                            @if (savingSchedule) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            Create @scheduleMonths month@(scheduleMonths == 1 ? "" : "s")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
 
 @if (showAccountModal)
 {
@@ -226,6 +331,13 @@ else
                         }
                     </div>
                     <div class="d-flex gap-2">
+                        @if (!goal.IsComplete)
+                        {
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => OpenScheduleModal(goal)">
+                                📅 Generate Schedule
+                            </button>
+                        }
                         <button class="btn btn-sm @(goal.IsComplete ? "btn-outline-secondary" : "btn-outline-success")"
                                 @onclick="() => ToggleComplete(goal.Id)">
                             @(goal.IsComplete ? "Reopen" : "Mark Complete")
@@ -299,6 +411,26 @@ else
     private bool showAccountModal = false;
     private CreateAccountDto newAccount = new();
     private string? accountSaveError;
+
+    // Schedule modal
+    private bool showScheduleModal = false;
+    private bool savingSchedule = false;
+    private GoalDto? scheduleGoal;
+    private GenerateGoalScheduleDto scheduleDto = new();
+    private string? scheduleError;
+    private int scheduleMonths => ScheduleMonthCount();
+
+    private int ScheduleMonthCount()
+    {
+        try
+        {
+            var start = new DateOnly(scheduleDto.StartYear, scheduleDto.StartMonth, 1);
+            var end   = new DateOnly(scheduleDto.EndYear,   scheduleDto.EndMonth,   1);
+            if (end < start) return 0;
+            return (end.Year - start.Year) * 12 + (end.Month - start.Month) + 1;
+        }
+        catch { return 0; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -415,4 +547,66 @@ else
         AccountType.Expense    => "A spending category (groceries, utilities, dining, etc.) — no balance tracked.",
         _                      => ""
     };
+
+    private void OpenScheduleModal(GoalDto goal)
+    {
+        scheduleGoal  = goal;
+        scheduleError = null;
+        savingSchedule = false;
+
+        var remaining  = Math.Max(0m, goal.TargetAmount - goal.SavedAmount);
+        var today      = DateTime.Today;
+        var nextMonth  = today.Month == 12 ? new DateTime(today.Year + 1, 1, 1) : new DateTime(today.Year, today.Month + 1, 1);
+        var endDate    = new DateOnly(goal.TargetDate.Year, goal.TargetDate.Month, 1);
+        var startDate  = new DateOnly(nextMonth.Year, nextMonth.Month, 1);
+        if (endDate < startDate) endDate = startDate;
+
+        int months = (endDate.Year - startDate.Year) * 12 + (endDate.Month - startDate.Month) + 1;
+        var monthly = months > 0 ? Math.Ceiling(remaining / months * 100) / 100 : remaining;
+
+        scheduleDto = new GenerateGoalScheduleDto
+        {
+            GoalId          = goal.Id,
+            FromAccountId   = goal.SourceAccountId,
+            ToAccountId     = goal.TargetAccountId,
+            MonthlyAmount   = monthly,
+            StartYear       = startDate.Year,
+            StartMonth      = startDate.Month,
+            EndYear         = endDate.Year,
+            EndMonth        = endDate.Month,
+            ReplaceExisting = true,
+        };
+        showScheduleModal = true;
+    }
+
+    private void CloseScheduleModal() => showScheduleModal = false;
+
+    private void ParseMonthInput(string? val, bool isStart)
+    {
+        // val is "YYYY-MM" from <input type="month">
+        if (val is null || val.Length < 7) return;
+        if (!int.TryParse(val[..4], out var yr) || !int.TryParse(val[5..7], out var mo)) return;
+        if (isStart) { scheduleDto.StartYear = yr; scheduleDto.StartMonth = mo; }
+        else          { scheduleDto.EndYear   = yr; scheduleDto.EndMonth   = mo; }
+    }
+
+    private async Task SaveSchedule()
+    {
+        if (string.IsNullOrEmpty(userId) || scheduleGoal is null) return;
+        scheduleError  = null;
+        savingSchedule = true;
+        try
+        {
+            await PlanService.GenerateGoalScheduleAsync(userId, scheduleDto);
+            showScheduleModal = false;
+        }
+        catch (Exception ex)
+        {
+            scheduleError = ex.Message;
+        }
+        finally
+        {
+            savingSchedule = false;
+        }
+    }
 }
