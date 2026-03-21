@@ -127,10 +127,10 @@ h1:focus {
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #353d52; border-radius: 4px; }
 
 /* ── Text utilities ──────────────────────────────────────── */
-[data-theme="dark"] .text-muted     { color: #c8d4e0 !important; }
+[data-theme="dark"] .text-muted     { color: rgba(255,255,255,0.6) !important; }
 [data-theme="dark"] .text-dark      { color: #ffffff !important; }
 [data-theme="dark"] .text-body      { color: #ffffff !important; }
-[data-theme="dark"] .text-secondary { color: #c8d4e0 !important; }
+[data-theme="dark"] .text-secondary { color: rgba(255,255,255,0.6) !important; }
 
 [data-theme="dark"] a,
 [data-theme="dark"] .btn-link       { color: rgba(255,255,255,0.85); }
@@ -213,7 +213,7 @@ h1:focus {
 [data-theme="dark"] .form-control[readonly],
 [data-theme="dark"] .form-select:disabled {
     background-color: #1e253a;
-    color: #7a8a9a;
+    color: #7a8da0;
 }
 [data-theme="dark"] .form-check-input {
     background-color: #252c3d;
@@ -286,7 +286,7 @@ h1:focus {
     border-color: #3a4258;
     color: #74b8ff;
 }
-[data-theme="dark"] .page-link:hover { background-color: #2d3448; color: #a2d0ff; border-color: #3a4258; }
+[data-theme="dark"] .page-link:hover { background-color: #2a3140; color: #a2d0ff; border-color: #3a4258; }
 [data-theme="dark"] .page-item.active .page-link   { background-color: #3d5acc; border-color: #3d5acc; color: #fff; }
 [data-theme="dark"] .page-item.disabled .page-link { background-color: #1e253a; border-color: #3a4258; color: #6b7d94; }
 
@@ -296,7 +296,7 @@ h1:focus {
 [data-theme="dark"] .btn-outline-dark { color: #ffffff; border-color: #5a6680; }
 [data-theme="dark"] .btn-outline-dark:hover { background-color: #3a4258; color: #fff; }
 [data-theme="dark"] .btn-light { background-color: #252c3d; border-color: #404859; color: #ffffff; }
-[data-theme="dark"] .btn-light:hover { background-color: #2d3448; color: #ffffff; }
+[data-theme="dark"] .btn-light:hover { background-color: #2a3140; color: #ffffff; }
 
 /* ── Badges with light backgrounds ──────────────────────── */
 [data-theme="dark"] .badge.bg-light      { background-color: #353d52 !important; color: #ffffff !important; }
