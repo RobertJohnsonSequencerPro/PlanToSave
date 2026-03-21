@@ -108,9 +108,9 @@ h1:focus {
     /* Override Bootstrap 5.1 CSS variables so components that use var(--bs-*)
        automatically get dark values without needing individual class overrides. */
     --bs-body-bg:          #1a1d24;
-    --bs-body-color:       #dde4ec;
+    --bs-body-color:       #eef2f7;
     --bs-border-color:     #3a4258;
-    --bs-secondary-color:  #9baab8;
+    --bs-secondary-color:  #c8d4e0;
     --bs-tertiary-bg:      #252c3d;
     --bs-card-bg:          #21272f;
     --bs-card-border-color:#3a4258;
@@ -119,7 +119,7 @@ h1:focus {
 [data-theme="dark"] body {
     color-scheme: dark;
     background-color: #1a1d24;
-    color: #dde4ec;
+    color: #eef2f7;
 }
 
 /* Scrollbars (webkit) */
@@ -127,10 +127,10 @@ h1:focus {
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #353d52; border-radius: 4px; }
 
 /* ── Text utilities ──────────────────────────────────────── */
-[data-theme="dark"] .text-muted     { color: #9baab8 !important; }
-[data-theme="dark"] .text-dark      { color: #dde4ec !important; }
-[data-theme="dark"] .text-body      { color: #dde4ec !important; }
-[data-theme="dark"] .text-secondary { color: #9baab8 !important; }
+[data-theme="dark"] .text-muted     { color: #c8d4e0 !important; }
+[data-theme="dark"] .text-dark      { color: #eef2f7 !important; }
+[data-theme="dark"] .text-body      { color: #eef2f7 !important; }
+[data-theme="dark"] .text-secondary { color: #c8d4e0 !important; }
 
 [data-theme="dark"] a,
 [data-theme="dark"] .btn-link       { color: #74b8ff; }
@@ -146,23 +146,24 @@ h1:focus {
 [data-theme="dark"] .card {
     background-color: #21272f;
     border-color: #3a4258;
-    color: #dde4ec;
+    color: #eef2f7;
 }
 [data-theme="dark"] .card-header {
     background-color: rgba(255,255,255,.04);
     border-bottom-color: #3a4258;
-    color: #dde4ec;
+    color: #eef2f7;
 }
 [data-theme="dark"] .card-footer {
     background-color: rgba(255,255,255,.03);
     border-top-color: #3a4258;
+    color: #eef2f7;
 }
 
 /* ── Modals ──────────────────────────────────────────────── */
 [data-theme="dark"] .modal-content {
     background-color: #21272f;
     border-color: #3a4258;
-    color: #dde4ec;
+    color: #eef2f7;
 }
 [data-theme="dark"] .modal-header { border-bottom-color: #3a4258; }
 [data-theme="dark"] .modal-footer { border-top-color: #3a4258; }
@@ -172,19 +173,19 @@ h1:focus {
 
 /* ── Tables ──────────────────────────────────────────────── */
 [data-theme="dark"] .table {
-    color: #dde4ec;
+    color: #eef2f7;
     --bs-table-bg: transparent;
     --bs-table-accent-bg: rgba(255,255,255,.03);
     --bs-table-striped-bg: rgba(255,255,255,.03);
-    --bs-table-striped-color: #dde4ec;
+    --bs-table-striped-color: #eef2f7;
     --bs-table-hover-bg: rgba(255,255,255,.05);
-    --bs-table-hover-color: #dde4ec;
+    --bs-table-hover-color: #eef2f7;
     --bs-table-border-color: #3a4258;
 }
 [data-theme="dark"] .table > :not(caption) > * > * {
     border-bottom-color: #3a4258;
 }
-[data-theme="dark"] .table th { color: #dde4ec; }
+[data-theme="dark"] .table th { color: #eef2f7; }
 [data-theme="dark"] .table-light,
 [data-theme="dark"] .table-light > th,
 [data-theme="dark"] .table-light > td {
@@ -197,14 +198,14 @@ h1:focus {
 [data-theme="dark"] .form-control,
 [data-theme="dark"] .form-select {
     background-color: #252c3d;
-    color: #dde4ec;
+    color: #eef2f7;
     border-color: #404859;
 }
-[data-theme="dark"] .form-control::placeholder { color: #6b7d94; }
+[data-theme="dark"] .form-control::placeholder { color: #7a8da0; }
 [data-theme="dark"] .form-control:focus,
 [data-theme="dark"] .form-select:focus {
     background-color: #252c3d;
-    color: #dde4ec;
+    color: #eef2f7;
     border-color: #5b6cad;
     box-shadow: 0 0 0 0.1rem transparent, 0 0 0 0.25rem rgba(91,108,173,.3);
 }
@@ -222,11 +223,11 @@ h1:focus {
     background-color: #4f68d4;
     border-color: #4f68d4;
 }
-[data-theme="dark"] .form-label { color: #c5d0db; }
-[data-theme="dark"] .col-form-label { color: #c5d0db; }
+[data-theme="dark"] .form-label { color: #d8e2ec; }
+[data-theme="dark"] .col-form-label { color: #d8e2ec; }
 [data-theme="dark"] .input-group-text {
     background-color: #1e253a;
-    color: #dde4ec;
+    color: #eef2f7;
     border-color: #404859;
 }
 [data-theme="dark"] option {
@@ -254,12 +255,12 @@ h1:focus {
 [data-theme="dark"] .list-group-item {
     background-color: #21272f;
     border-color: #3a4258;
-    color: #dde4ec;
+    color: #eef2f7;
 }
 [data-theme="dark"] .list-group-item-action:hover,
 [data-theme="dark"] .list-group-item-action:focus {
     background-color: #2a3140;
-    color: #dde4ec;
+    color: #eef2f7;
 }
 [data-theme="dark"] .list-group-item.active {
     background-color: #3d5acc;
@@ -274,7 +275,7 @@ h1:focus {
     background-color: #21272f;
     border-color: #3a4258;
 }
-[data-theme="dark"] .dropdown-item { color: #dde4ec; }
+[data-theme="dark"] .dropdown-item { color: #eef2f7; }
 [data-theme="dark"] .dropdown-item:hover,
 [data-theme="dark"] .dropdown-item:focus { background-color: rgba(255,255,255,.07); color: #fff; }
 [data-theme="dark"] .dropdown-divider { border-color: #3a4258; }
