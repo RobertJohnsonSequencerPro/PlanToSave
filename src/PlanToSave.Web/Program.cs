@@ -87,6 +87,7 @@ builder.Services.AddScoped<IFlowTemplateService, FlowTemplateService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<IActivityPlanService, ActivityPlanService>();
+builder.Services.AddScoped<IActivityReviewService, ActivityReviewService>();
 
 var app = builder.Build();
 

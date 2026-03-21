@@ -17,6 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Idea> Ideas => Set<Idea>();
     public DbSet<ActivityPlan> ActivityPlans => Set<ActivityPlan>();
     public DbSet<ActivityStep> ActivitySteps => Set<ActivityStep>();
+    public DbSet<ActivityReview> ActivityReviews => Set<ActivityReview>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -198,6 +199,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(s => s.Title).HasMaxLength(300).IsRequired();
             e.HasOne(s => s.ActivityPlan).WithMany(p => p.Steps)
                 .HasForeignKey(s => s.ActivityPlanId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── ActivityReviews ────────────────────────────────────────────
+        builder.Entity<ActivityReview>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Reflection).HasMaxLength(2000);
+            e.Property(r => r.ActualAmount).HasPrecision(18, 2);
+            // One review per plan
+            e.HasIndex(r => r.ActivityPlanId).IsUnique();
+            e.HasOne(r => r.ActivityPlan).WithOne(p => p.Review)
+                .HasForeignKey<ActivityReview>(r => r.ActivityPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

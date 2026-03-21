@@ -15,4 +15,5 @@ public class ActivityPlan
 
     public Idea Idea { get; set; } = null!;
     public ICollection<ActivityStep> Steps { get; set; } = new List<ActivityStep>();
+    public ActivityReview? Review { get; set; }
 }

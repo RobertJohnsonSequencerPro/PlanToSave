@@ -1,0 +1,213 @@
+@page "/review"
+@attribute [Authorize]
+@inject IActivityReviewService ReviewService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Review — PlanToSave</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Review</h1>
+    <span class="text-muted small">Close the loop on past activities</span>
+</div>
+
+@if (plans is null)
+{
+    <p class="text-muted">Loading...</p>
+}
+else if (plans.Count == 0)
+{
+    <div class="card text-center py-5 text-muted">
+        <div class="mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="text-success" viewBox="0 0 16 16">
+                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/>
+            </svg>
+        </div>
+        <h5 class="fw-semibold">All caught up!</h5>
+        <p class="mb-3">No activities are waiting for a review.</p>
+        <a href="/upcoming" class="btn btn-outline-primary btn-sm mx-auto" style="width: fit-content;">View upcoming plans</a>
+    </div>
+}
+else
+{
+    <p class="text-muted mb-4">
+        @plans.Count @(plans.Count == 1 ? "activity needs" : "activities need") your attention. Did these happen?
+    </p>
+
+    @foreach (var plan in plans)
+    {
+        var isExpanded = expandedId == plan.Id;
+        var isSkipping = skippingId == plan.Id;
+        <div class="card mb-3 @(isExpanded || isSkipping ? "border-primary" : "border-warning")">
+            <div class="card-body">
+                @* Header row *@
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="badge bg-secondary me-1 small">@plan.IdeaCategory</span>
+                        <h5 class="mb-0 d-inline fw-semibold">@plan.IdeaTitle</h5>
+                    </div>
+                    <span class="text-danger small fw-semibold">
+                        @plan.PlannedDate!.Value.ToString("MMM d, yyyy")
+                    </span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(plan.Notes))
+                {
+                    <p class="text-muted small mb-2">@plan.Notes</p>
+                }
+
+                @if (!isExpanded && !isSkipping)
+                {
+                    @* Decision buttons *@
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-success btn-sm" @onclick="() => StartReview(plan.Id)">
+                            &#10003; Yes, I did it!
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartSkip(plan.Id)">
+                            &#10007; Didn't happen
+                        </button>
+                    </div>
+                }
+
+                @if (isExpanded)
+                {
+                    @* Review form *@
+                    <hr class="my-3" />
+                    <EditForm Model="reviewForm" OnValidSubmit="() => SubmitReview(plan.Id)">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">How would you rate it?</label>
+                            <div class="d-flex gap-2">
+                                @for (int star = 1; star <= 5; star++)
+                                {
+                                    var s = star; // capture for closure
+                                    <button type="button"
+                                            class="btn btn-sm @(reviewForm.Rating == s ? "btn-warning" : "btn-outline-warning")"
+                                            @onclick="() => reviewForm.Rating = s"
+                                            style="font-size: 1.2rem; line-height: 1;">
+                                        ★
+                                    </button>
+                                }
+                                @if (reviewForm.Rating.HasValue)
+                                {
+                                    <span class="align-self-center text-muted small ms-2">@reviewForm.Rating/5</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Reflection <span class="text-muted fw-normal">(optional)</span></label>
+                            <InputTextArea @bind-Value="reviewForm.Reflection" class="form-control" rows="3"
+                                           placeholder="What did you enjoy? What would you do differently?" />
+                            <ValidationMessage For="() => reviewForm.Reflection" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Actual cost <span class="text-muted fw-normal">(optional)</span></label>
+                            <div class="input-group" style="max-width: 200px;">
+                                <span class="input-group-text">$</span>
+                                <InputNumber @bind-Value="reviewForm.ActualAmount" class="form-control" placeholder="0.00" />
+                            </div>
+                            <ValidationMessage For="() => reviewForm.ActualAmount" class="text-danger small" />
+                        </div>
+                        @if (submitError is not null)
+                        {
+                            <div class="alert alert-danger py-2 small">@submitError</div>
+                        }
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-sm">Save review</button>
+                            <button type="button" class="btn btn-link btn-sm p-0" @onclick="CancelAction">Cancel</button>
+                        </div>
+                    </EditForm>
+                }
+
+                @if (isSkipping)
+                {
+                    @* Skip confirmation *@
+                    <hr class="my-3" />
+                    <p class="text-muted small mb-3">
+                        This will mark the plan as skipped and return <strong>@plan.IdeaTitle</strong> to your backlog so you can reschedule it.
+                    </p>
+                    @if (submitError is not null)
+                    {
+                        <div class="alert alert-danger py-2 small">@submitError</div>
+                    }
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary btn-sm" @onclick="() => ConfirmSkip(plan.Id)">Confirm skip</button>
+                        <button class="btn btn-link btn-sm p-0" @onclick="CancelAction">Cancel</button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<ActivityPlanDto>? plans;
+    private string userId = "";
+
+    private Guid? expandedId;
+    private Guid? skippingId;
+    private SubmitReviewDto reviewForm = new();
+    private string? submitError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        await LoadPlans();
+    }
+
+    private async Task LoadPlans()
+    {
+        plans = await ReviewService.GetNeedsReviewAsync(userId);
+    }
+
+    private void StartReview(Guid id)
+    {
+        expandedId  = id;
+        skippingId  = null;
+        reviewForm  = new SubmitReviewDto();
+        submitError = null;
+    }
+
+    private void StartSkip(Guid id)
+    {
+        skippingId  = id;
+        expandedId  = null;
+        submitError = null;
+    }
+
+    private void CancelAction()
+    {
+        expandedId  = null;
+        skippingId  = null;
+        submitError = null;
+    }
+
+    private async Task SubmitReview(Guid planId)
+    {
+        try
+        {
+            await ReviewService.SubmitAsync(userId, planId, reviewForm);
+            expandedId  = null;
+            submitError = null;
+            await LoadPlans();
+        }
+        catch (Exception ex)
+        {
+            submitError = ex.Message;
+        }
+    }
+
+    private async Task ConfirmSkip(Guid planId)
+    {
+        try
+        {
+            await ReviewService.SkipAsync(userId, planId);
+            skippingId  = null;
+            submitError = null;
+            await LoadPlans();
+        }
+        catch (Exception ex)
+        {
+            submitError = ex.Message;
+        }
+    }
+}
