@@ -1,0 +1,316 @@
+@page "/plans/{Year:int}/{Month:int}"
+@attribute [Authorize]
+@inject IMonthlyPlanService PlanService
+@inject IActualFlowService FlowService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+
+<PageTitle>@(plan is null ? "Loading…" : MonthLabel(Year, Month)) Plan</PageTitle>
+
+@if (plan is null)
+{
+    <p class="text-muted">Loading...</p>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <a href="/plans" class="text-muted text-decoration-none small">← All Plans</a>
+            <h1 class="h3 mb-0 mt-1">@MonthLabel(Year, Month)</h1>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            @if (plan.Status == MonthlyPlanStatus.Draft)
+            {
+                <button class="btn btn-success btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Active)">
+                    Activate
+                </button>
+            }
+            else if (plan.Status == MonthlyPlanStatus.Active)
+            {
+                <button class="btn btn-secondary btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Closed)">
+                    Close Plan
+                </button>
+                <button class="btn btn-outline-warning btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Draft)">
+                    Revert to Draft
+                </button>
+            }
+            else if (plan.Status == MonthlyPlanStatus.Closed)
+            {
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Active)">
+                    Re-open
+                </button>
+            }
+            <span class="badge @StatusBadgeClass(plan.Status)">@plan.Status</span>
+        </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="row g-3 mb-4 mt-1">
+        <div class="col-sm-4">
+            <div class="card text-center py-3">
+                <div class="text-muted small mb-1">Planned</div>
+                <div class="fs-4 fw-bold">@plan.PlannedFlows.Sum(f => f.PlannedAmount).ToString("C")</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card text-center py-3">
+                <div class="text-muted small mb-1">Actual</div>
+                <div class="fs-4 fw-bold">@plan.PlannedFlows.Sum(f => f.ActualAmount).ToString("C")</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            @{
+                var variance = plan.PlannedFlows.Sum(f => f.ActualAmount) - plan.PlannedFlows.Sum(f => f.PlannedAmount);
+                var varClass = variance >= 0 ? "text-success" : "text-danger";
+                var varSign = variance >= 0 ? "+" : "";
+            }
+            <div class="card text-center py-3">
+                <div class="text-muted small mb-1">Variance</div>
+                <div class="fs-4 fw-bold @varClass">@(varSign + variance.ToString("C"))</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Planned flows table -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">Planned Flows</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="SeedTemplates" title="Add all active recurring templates">
+                Seed from Templates
+            </button>
+            <button class="btn btn-primary btn-sm" @onclick="ToggleAddForm">
+                @(showAddForm ? "Cancel" : "+ Add Flow")
+            </button>
+        </div>
+    </div>
+
+    @if (seedMessage is not null)
+    {
+        <div class="alert alert-info alert-dismissible py-2">
+            @seedMessage
+            <button type="button" class="btn-close" @onclick="() => seedMessage = null"></button>
+        </div>
+    }
+
+    @if (showAddForm)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3 text-muted">New Planned Flow</h6>
+                <EditForm Model="newFlow" OnValidSubmit="AddFlow">
+                    <DataAnnotationsValidator />
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">From Account</label>
+                            <InputSelect @bind-Value="newFlow.FromAccountId" class="form-select">
+                                <option value="@Guid.Empty">— select —</option>
+                                @foreach (var group in fromOptions.GroupBy(a => a.Type))
+                                {
+                                    <optgroup label="@group.Key">
+                                        @foreach (var a in group)
+                                        {
+                                            <option value="@a.Id">@a.Name</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">To Account</label>
+                            <InputSelect @bind-Value="newFlow.ToAccountId" class="form-select">
+                                <option value="@Guid.Empty">— select —</option>
+                                @foreach (var group in toOptions.GroupBy(a => a.Type))
+                                {
+                                    <optgroup label="@group.Key">
+                                        @foreach (var a in group)
+                                        {
+                                            <option value="@a.Id">@a.Name</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Amount</label>
+                            <InputNumber @bind-Value="newFlow.Amount" class="form-control" min="0.01" step="0.01" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Description</label>
+                            <InputText @bind-Value="newFlow.Description" class="form-control" placeholder="optional" />
+                        </div>
+                    </div>
+                    <ValidationSummary class="text-danger mt-2" />
+                    @if (formError is not null)
+                    {
+                        <div class="text-danger mt-2 small">@formError</div>
+                    }
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                        <button type="button" class="btn btn-link btn-sm" @onclick="ToggleAddForm">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    @if (plan.PlannedFlows.Count == 0)
+    {
+        <div class="card text-center py-4 text-muted">
+            No planned flows yet. Add a flow or seed from templates.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Description</th>
+                        <th class="text-end">Planned</th>
+                        <th class="text-end">Actual</th>
+                        <th class="text-end">Variance</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pf in plan.PlannedFlows)
+                    {
+                        var pfVariance = pf.ActualAmount - pf.PlannedAmount;
+                        var pfVarClass = pfVariance >= 0 ? "text-success" : "text-danger";
+                        var pfVarSign = pfVariance >= 0 ? "+" : "";
+                        <tr>
+                            <td>
+                                <span class="badge @GetTypeBadgeClass(pf.FromAccountType) me-1">@pf.FromAccountType</span>
+                                @pf.FromAccountName
+                            </td>
+                            <td>
+                                <span class="badge @GetTypeBadgeClass(pf.ToAccountType) me-1">@pf.ToAccountType</span>
+                                @pf.ToAccountName
+                            </td>
+                            <td class="text-muted small">@(pf.Description ?? "—")</td>
+                            <td class="text-end">@pf.PlannedAmount.ToString("C")</td>
+                            <td class="text-end">@pf.ActualAmount.ToString("C")</td>
+                            <td class="text-end @pfVarClass fw-semibold">@(pfVarSign + pfVariance.ToString("C"))</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => DeletePlannedFlow(pf.Id)">
+                                    ×
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-semibold">
+                    <tr>
+                        <td colspan="3">Total</td>
+                        <td class="text-end">@plan.PlannedFlows.Sum(f => f.PlannedAmount).ToString("C")</td>
+                        <td class="text-end">@plan.PlannedFlows.Sum(f => f.ActualAmount).ToString("C")</td>
+                        <td class="text-end @varClass">@(varSign + variance.ToString("C"))</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int Year { get; set; }
+    [Parameter] public int Month { get; set; }
+
+    private MonthlyPlanDetailDto? plan;
+    private List<AccountOptionDto> fromOptions = [];
+    private List<AccountOptionDto> toOptions = [];
+    private string userId = "";
+    private bool showAddForm = false;
+    private CreatePlannedFlowDto newFlow = new();
+    private string? formError;
+    private string? seedMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
+        var planTask = PlanService.GetOrCreatePlanAsync(userId, Year, Month);
+        var fromTask = FlowService.GetFromAccountOptionsAsync(userId);
+        var toTask = FlowService.GetToAccountOptionsAsync(userId);
+        await Task.WhenAll(planTask, fromTask, toTask);
+
+        plan = planTask.Result;
+        fromOptions = fromTask.Result;
+        toOptions = toTask.Result;
+    }
+
+    private void ToggleAddForm()
+    {
+        showAddForm = !showAddForm;
+        if (showAddForm)
+        {
+            newFlow = new CreatePlannedFlowDto();
+            formError = null;
+        }
+    }
+
+    private async Task AddFlow()
+    {
+        if (newFlow.FromAccountId == Guid.Empty || newFlow.ToAccountId == Guid.Empty)
+        {
+            formError = "Please select both From and To accounts.";
+            return;
+        }
+        try
+        {
+            await PlanService.AddPlannedFlowAsync(userId, plan!.Id, newFlow);
+            plan = await PlanService.GetPlanDetailAsync(userId, Year, Month);
+            showAddForm = false;
+            formError = null;
+        }
+        catch (Exception ex)
+        {
+            formError = ex.Message;
+        }
+    }
+
+    private async Task DeletePlannedFlow(Guid id)
+    {
+        await PlanService.DeletePlannedFlowAsync(userId, id);
+        plan = await PlanService.GetPlanDetailAsync(userId, Year, Month);
+    }
+
+    private async Task SetStatus(MonthlyPlanStatus status)
+    {
+        await PlanService.SetStatusAsync(userId, plan!.Id, status);
+        plan = plan with { Status = status };
+    }
+
+    private async Task SeedTemplates()
+    {
+        await PlanService.SeedFromTemplatesAsync(userId, plan!.Id);
+        plan = await PlanService.GetPlanDetailAsync(userId, Year, Month);
+        seedMessage = "Templates applied. Any already-present flows were skipped.";
+    }
+
+    private static string MonthLabel(int year, int month)
+        => new DateTime(year, month, 1).ToString("MMMM yyyy");
+
+    private static string StatusBadgeClass(MonthlyPlanStatus status) => status switch
+    {
+        MonthlyPlanStatus.Active => "bg-success",
+        MonthlyPlanStatus.Closed => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+
+    private static string GetTypeBadgeClass(AccountType type) => type switch
+    {
+        AccountType.Income => "bg-success",
+        AccountType.Expense => "bg-danger",
+        AccountType.Savings => "bg-primary",
+        AccountType.Checking => "bg-info text-dark",
+        AccountType.Credit => "bg-warning text-dark",
+        AccountType.Investment => "bg-purple text-white",
+        _ => "bg-secondary"
+    };
+}

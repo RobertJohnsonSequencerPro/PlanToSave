@@ -1,0 +1,100 @@
+@page "/plans"
+@attribute [Authorize]
+@inject IMonthlyPlanService PlanService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+
+<PageTitle>Monthly Plans</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Monthly Plans</h1>
+    <button class="btn btn-primary" @onclick="OpenCurrentMonth">
+        + Open @currentMonthLabel
+    </button>
+</div>
+
+@if (plans is null)
+{
+    <p class="text-muted">Loading...</p>
+}
+else if (plans.Count == 0)
+{
+    <div class="card text-center py-5">
+        <div class="card-body text-muted">
+            <p class="mb-2">No monthly plans yet.</p>
+            <p>Click <strong>+ Open @currentMonthLabel</strong> to create your first plan.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Month</th>
+                    <th>Status</th>
+                    <th class="text-end">Planned</th>
+                    <th class="text-end">Actual</th>
+                    <th class="text-end">Variance</th>
+                    <th class="text-center">Flows</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var plan in plans)
+                {
+                    var variance = plan.TotalActual - plan.TotalPlanned;
+                    var varianceClass = variance >= 0 ? "text-success" : "text-danger";
+                    var varianceSign = variance >= 0 ? "+" : "";
+                    var planUrl = "/plans/" + plan.Year + "/" + plan.Month;
+                    <tr style="cursor:pointer" @onclick="() => Nav.NavigateTo(planUrl)">
+                        <td class="fw-semibold">@MonthLabel(plan.Year, plan.Month)</td>
+                        <td>
+                            <span class="badge @StatusBadgeClass(plan.Status)">@plan.Status</span>
+                        </td>
+                        <td class="text-end">@plan.TotalPlanned.ToString("C")</td>
+                        <td class="text-end">@plan.TotalActual.ToString("C")</td>
+                        <td class="text-end @varianceClass fw-semibold">@(varianceSign + variance.ToString("C"))</td>
+                        <td class="text-center text-muted">@plan.PlannedFlowCount</td>
+                        <td class="text-end">
+                            <a href="/plans/@plan.Year/@plan.Month" class="btn btn-sm btn-outline-secondary"
+                               @onclick:stopPropagation="true">
+                                View →
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<MonthlyPlanSummaryDto>? plans;
+    private string userId = "";
+    private string currentMonthLabel = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        currentMonthLabel = DateTime.Today.ToString("MMMM yyyy");
+        plans = await PlanService.GetPlansAsync(userId);
+    }
+
+    private void OpenCurrentMonth()
+    {
+        Nav.NavigateTo($"/plans/{DateTime.Today.Year}/{DateTime.Today.Month}");
+    }
+
+    private static string MonthLabel(int year, int month)
+        => new DateTime(year, month, 1).ToString("MMMM yyyy");
+
+    private static string StatusBadgeClass(MonthlyPlanStatus status) => status switch
+    {
+        MonthlyPlanStatus.Active => "bg-success",
+        MonthlyPlanStatus.Closed => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+}
