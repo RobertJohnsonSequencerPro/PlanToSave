@@ -91,6 +91,27 @@
     color: #fff;
 }
 
+/* ── Pipeline stage icon colors ─────────────────────────────── */
+/* Ideas → amber  (Stage 1) */
+.rail-nav ::deep a.nav-icon-ideas { color: rgba(255, 193, 7, 0.72); }
+.rail-nav ::deep a.nav-icon-ideas:hover,
+.rail-nav ::deep a.nav-icon-ideas.active { color: #ffc107; }
+
+/* Goals → blue   (Stage 2) */
+.rail-nav ::deep a.nav-icon-goals { color: rgba(110, 168, 254, 0.72); }
+.rail-nav ::deep a.nav-icon-goals:hover,
+.rail-nav ::deep a.nav-icon-goals.active { color: #6ea8fe; }
+
+/* Calendar → teal/cyan  (Stage 3 — Budgeted) */
+.rail-nav ::deep a.nav-icon-calendar { color: rgba(13, 202, 240, 0.72); }
+.rail-nav ::deep a.nav-icon-calendar:hover,
+.rail-nav ::deep a.nav-icon-calendar.active { color: #0dcaf0; }
+
+/* Flows → green  (Stage 4 — Tracked) */
+.rail-nav ::deep a.nav-icon-flows { color: rgba(32, 201, 151, 0.72); }
+.rail-nav ::deep a.nav-icon-flows:hover,
+.rail-nav ::deep a.nav-icon-flows.active { color: #20c997; }
+
 .rail-footer {
     display: flex;
     flex-direction: column;
