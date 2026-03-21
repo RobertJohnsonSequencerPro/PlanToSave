@@ -231,12 +231,26 @@ else
             <tbody>
                 @foreach (var idea in ideas)
                 {
+                    var ideaPlan = _planByIdeaId.GetValueOrDefault(idea.Id);
                     <tr>
                         <td class="fw-semibold">
                             @idea.Title
                             @if (idea.Description is not null)
                             {
                                 <div class="text-muted small fw-normal">@idea.Description</div>
+                            }
+                            @if (ideaPlan is not null)
+                            {
+                                <div class="text-muted small fw-normal mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                                    </svg>
+                                    @(ideaPlan.PlannedDate?.ToString("MMM d, yyyy") ?? "TBD")
+                                    @if (ideaPlan.TotalSteps > 0)
+                                    {
+                                        <span class="ms-2">· @ideaPlan.CompletedSteps/@ideaPlan.TotalSteps steps</span>
+                                    }
+                                </div>
                             }
                         </td>
                         <td><span class="badge @GetCategoryBadge(idea.Category)">@idea.Category.ToString().ToLower()</span></td>
@@ -255,6 +269,13 @@ else
                                 <a href="/goals?ideaId=@idea.Id" class="btn btn-sm btn-outline-success me-1"
                                    title="Create a savings goal toward this idea">
                                     Save for this →
+                                </a>
+                            }
+                            @if (ideaPlan is not null)
+                            {
+                                <a href="/upcoming/@ideaPlan.Id" class="btn btn-sm btn-outline-primary me-1"
+                                   title="View and edit this plan">
+                                    Edit Plan →
                                 </a>
                             }
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteIdea(idea.Id)" title="Delete" aria-label="Delete idea">
@@ -365,6 +386,10 @@ else
     private async Task LoadIdeas()
     {
         ideas = await IdeaService.GetIdeasAsync(userId, BuildFilter());
+        var plans = await ActivityPlanService.GetPlansAsync(userId);
+        _planByIdeaId = plans
+            .GroupBy(p => p.IdeaId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.CreatedAt).First());
     }
 
     private IdeaFilterDto BuildFilter() => new()
@@ -970,6 +995,8 @@ else
     };
 
     // ─── Plan This ────────────────────────────────────────────────────────────
+    private Dictionary<Guid, ActivityPlanDto> _planByIdeaId = new();
+    private bool _skipNextSave;
     private Guid? planningIdeaId;
     private string planningIdeaTitle = "";
     private CreateActivityPlanDto planForm = new();
@@ -985,6 +1012,7 @@ else
         planError         = null;
         planSteps         = [];
         newPlanStepTitle  = "";
+        _skipNextSave     = false;
         showAddForm       = false; // close the add-idea form if open
     }
 
@@ -1013,11 +1041,16 @@ else
 
     private void OnPlanStepKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter") AddPlanStep();
+        if (e.Key == "Enter")
+        {
+            AddPlanStep();
+            _skipNextSave = true; // prevent the form's submit event that follows the Enter keydown
+        }
     }
 
     private async Task SavePlan()
     {
+        if (_skipNextSave) { _skipNextSave = false; return; }
         if (!planningIdeaId.HasValue) return;
         try
         {
