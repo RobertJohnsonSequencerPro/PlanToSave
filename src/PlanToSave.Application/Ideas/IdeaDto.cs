@@ -49,5 +49,4 @@ public interface IIdeaService
     Task<List<IdeaDto>> GetIdeasAsync(string userId, IdeaFilterDto? filter = null);
     Task<Guid> CreateAsync(string userId, SaveIdeaDto dto);
     Task DeleteAsync(string userId, Guid id);
-    Task<IdeaDto?> GetRandomBacklogIdeaAsync(string userId, IdeaEnergyLevel? energy = null, IdeaCostEstimate? cost = null);
 }
