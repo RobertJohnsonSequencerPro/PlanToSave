@@ -102,6 +102,13 @@ public class AccountService(ApplicationDbContext db) : IAccountService
             .Select(f => new { f.FromAccountId, f.ToAccountId, f.Amount, f.Date })
             .ToListAsync();
 
+        // Interest rules (one rule per account)
+        var interestRules = await db.InterestRules
+            .Where(r => r.UserId == userId && accountIds.Contains(r.AccountId))
+            .ToDictionaryAsync(r => r.AccountId);
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
         return accounts.Select(a =>
         {
             var snap = latestSnapshot.GetValueOrDefault(a.Id);
@@ -115,8 +122,21 @@ public class AccountService(ApplicationDbContext db) : IAccountService
                 .Where(f => f.FromAccountId == a.Id && (cutoff is null || f.Date > cutoff))
                 .Sum(f => f.Amount);
 
-            return new AccountBalanceDto(a.Id, a.Name, a.Type,
-                baseBalance + inflows - outflows, cutoff);
+            var balance = baseBalance + inflows - outflows;
+
+            // Accrued interest since the rule's effective date (or the baseline cutoff, whichever is later)
+            decimal accruedInterest = 0m;
+            decimal? annualRatePct = null;
+            if (interestRules.TryGetValue(a.Id, out var rule))
+            {
+                annualRatePct = rule.AnnualRatePct;
+                var accrualFrom = rule.EffectiveDate;
+                if (cutoff.HasValue && cutoff.Value > accrualFrom)
+                    accrualFrom = cutoff.Value;
+                accruedInterest = ComputeAccruedInterest(balance, rule.AnnualRatePct, rule.Frequency, accrualFrom, today);
+            }
+
+            return new AccountBalanceDto(a.Id, a.Name, a.Type, balance, cutoff, accruedInterest, annualRatePct);
         }).ToList();
     }
 
@@ -164,4 +184,73 @@ public class AccountService(ApplicationDbContext db) : IAccountService
 
     private static AccountDto ToDto(Account a) =>
         new(a.Id, a.Name, a.Type, a.Description, a.OpeningBalance, a.IsArchived, a.IsStockAccount);
+
+    public async Task<InterestRuleDto?> GetInterestRuleAsync(string userId, Guid accountId)
+    {
+        var rule = await db.InterestRules
+            .FirstOrDefaultAsync(r => r.UserId == userId && r.AccountId == accountId);
+        return rule is null ? null
+            : new InterestRuleDto(rule.Id, rule.AnnualRatePct, rule.Frequency, rule.EffectiveDate, rule.CreatedAt);
+    }
+
+    public async Task SetInterestRuleAsync(string userId, Guid accountId, SetInterestRuleDto dto)
+    {
+        _ = await db.Accounts.FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
+            ?? throw new InvalidOperationException("Account not found.");
+
+        var existing = await db.InterestRules
+            .FirstOrDefaultAsync(r => r.UserId == userId && r.AccountId == accountId);
+
+        if (existing is not null)
+        {
+            existing.AnnualRatePct = dto.AnnualRatePct;
+            existing.Frequency = dto.Frequency;
+            existing.EffectiveDate = dto.EffectiveDate;
+        }
+        else
+        {
+            db.InterestRules.Add(new InterestRule
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                AccountId = accountId,
+                AnnualRatePct = dto.AnnualRatePct,
+                Frequency = dto.Frequency,
+                EffectiveDate = dto.EffectiveDate,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteInterestRuleAsync(string userId, Guid accountId)
+    {
+        var rule = await db.InterestRules
+            .FirstOrDefaultAsync(r => r.UserId == userId && r.AccountId == accountId);
+        if (rule is not null)
+        {
+            db.InterestRules.Remove(rule);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private static decimal ComputeAccruedInterest(
+        decimal balance, decimal annualRatePct, CompoundingFrequency frequency,
+        DateOnly fromDate, DateOnly toDate)
+    {
+        var days = toDate.DayNumber - fromDate.DayNumber;
+        if (days <= 0 || balance == 0 || annualRatePct == 0) return 0m;
+
+        var r = (double)(annualRatePct / 100m);
+        var t = days / 365.0;
+        var n = frequency switch
+        {
+            CompoundingFrequency.Daily    => 365.0,
+            CompoundingFrequency.Monthly  => 12.0,
+            CompoundingFrequency.Annually => 1.0,
+            _                             => 12.0
+        };
+        var factor = Math.Pow(1.0 + r / n, n * t) - 1.0;
+        return Math.Round((decimal)factor * balance, 2);
+    }
 }

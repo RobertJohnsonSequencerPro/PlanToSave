@@ -3,6 +3,7 @@
 @attribute [Authorize]
 @inject IAccountService AccountService
 @inject NavigationManager Nav
+@using PlanToSave.Domain.Enums
 
 <PageTitle>@(Id is null ? "New Account" : "Edit Account") — PlanToSave</PageTitle>
 
@@ -89,6 +90,60 @@
                     <a href="/accounts" class="btn btn-outline-secondary">Cancel</a>
                 </div>
             </EditForm>
+
+            @* Interest rule — only shown when editing a stock account *@
+            @if (Id is not null && isStockAccount)
+            {
+                <hr class="my-4" />
+                <h5 class="mb-3">Interest Rate</h5>
+
+                @if (existingRule is not null)
+                {
+                    <div class="alert alert-info d-flex justify-content-between align-items-center py-2 mb-3">
+                        <span>
+                            <strong>@existingRule.AnnualRatePct.ToString("G6")%</strong> APR &mdash;
+                            @existingRule.Frequency compounding &mdash;
+                            effective @existingRule.EffectiveDate.ToString("MMM d, yyyy")
+                        </span>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="DeleteInterestRule">Remove</button>
+                    </div>
+                }
+
+                <EditForm Model="interestModel" OnValidSubmit="SaveInterestRule">
+                    <DataAnnotationsValidator />
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-4">
+                            <label class="form-label fw-semibold">Annual Rate (%)</label>
+                            <InputNumber @bind-Value="interestModel.AnnualRatePct" class="form-control" step="0.001" placeholder="e.g. 4.5" />
+                            <ValidationMessage For="() => interestModel.AnnualRatePct" class="text-danger small" />
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label fw-semibold">Compounding</label>
+                            <InputSelect @bind-Value="interestModel.Frequency" class="form-select">
+                                @foreach (var freq in Enum.GetValues<CompoundingFrequency>())
+                                {
+                                    <option value="@freq">@freq</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label fw-semibold">Effective Date</label>
+                            <InputDate @bind-Value="interestModel.EffectiveDate" class="form-control" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(interestError))
+                    {
+                        <div class="alert alert-danger py-2">@interestError</div>
+                    }
+
+                    <button type="submit" class="btn btn-outline-primary btn-sm" disabled="@savingInterest">
+                        @if (savingInterest) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @(existingRule is null ? "Set Interest Rate" : "Update Interest Rate")
+                    </button>
+                </EditForm>
+            }
         }
         else if (notFound)
         {
@@ -111,9 +166,15 @@
     private AccountFormModel? model;
     private string userId = "";
     private string existingType = "";
+    private bool isStockAccount = false;
     private bool saving = false;
     private bool notFound = false;
     private string? errorMessage;
+
+    private InterestRuleDto? existingRule;
+    private SetInterestRuleDto interestModel = new();
+    private bool savingInterest = false;
+    private string? interestError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -126,6 +187,7 @@
             if (account is null) { notFound = true; return; }
 
             existingType = account.Type.ToString();
+            isStockAccount = account.IsStockAccount;
             model = new AccountFormModel
             {
                 Name = account.Name,
@@ -133,6 +195,15 @@
                 Description = account.Description,
                 OpeningBalance = account.OpeningBalance
             };
+
+            // Load existing interest rule
+            existingRule = await AccountService.GetInterestRuleAsync(userId, account.Id);
+            if (existingRule is not null)
+            {
+                interestModel.AnnualRatePct = existingRule.AnnualRatePct;
+                interestModel.Frequency = existingRule.Frequency;
+                interestModel.EffectiveDate = existingRule.EffectiveDate;
+            }
         }
         else
         {
@@ -174,6 +245,31 @@
             errorMessage = $"Could not save account: {ex.Message}";
             saving = false;
         }
+    }
+
+    private async Task SaveInterestRule()
+    {
+        if (Id is null) return;
+        savingInterest = true;
+        interestError = null;
+        try
+        {
+            await AccountService.SetInterestRuleAsync(userId, Id.Value, interestModel);
+            existingRule = await AccountService.GetInterestRuleAsync(userId, Id.Value);
+        }
+        catch (Exception ex)
+        {
+            interestError = $"Could not save interest rule: {ex.Message}";
+        }
+        finally { savingInterest = false; }
+    }
+
+    private async Task DeleteInterestRule()
+    {
+        if (Id is null) return;
+        await AccountService.DeleteInterestRuleAsync(userId, Id.Value);
+        existingRule = null;
+        interestModel = new();
     }
 
     private static string GetTypeHint(AccountType type) => type switch

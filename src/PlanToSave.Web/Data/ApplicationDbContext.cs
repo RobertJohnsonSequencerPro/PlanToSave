@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<BalanceSnapshot> BalanceSnapshots => Set<BalanceSnapshot>();
+    public DbSet<InterestRule> InterestRules => Set<InterestRule>();
     public DbSet<FlowTemplate> FlowTemplates => Set<FlowTemplate>();
     public DbSet<MonthlyPlan> MonthlyPlans => Set<MonthlyPlan>();
     public DbSet<PlannedFlow> PlannedFlows => Set<PlannedFlow>();
@@ -131,6 +132,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── InterestRules ─────────────────────────────────────────────
+        builder.Entity<InterestRule>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.Property(r => r.AnnualRatePct).HasPrecision(10, 5);
+            e.Property(r => r.Frequency).HasConversion<string>();
+            // One rule per account per user — unique constraint
+            e.HasIndex(r => new { r.UserId, r.AccountId }).IsUnique();
+            e.HasOne(r => r.Account).WithMany().HasForeignKey(r => r.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

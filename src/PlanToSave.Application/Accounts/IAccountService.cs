@@ -10,4 +10,7 @@ public interface IAccountService
     Task<List<AccountBalanceDto>> GetBalancesAsync(string userId);
     Task SetSnapshotAsync(string userId, Guid accountId, decimal amount, DateOnly effectiveDate, string? note);
     Task<List<BalanceSnapshotDto>> GetSnapshotsAsync(string userId, Guid accountId);
+    Task<InterestRuleDto?> GetInterestRuleAsync(string userId, Guid accountId);
+    Task SetInterestRuleAsync(string userId, Guid accountId, SetInterestRuleDto dto);
+    Task DeleteInterestRuleAsync(string userId, Guid accountId);
 }

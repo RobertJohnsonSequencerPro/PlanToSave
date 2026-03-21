@@ -95,6 +95,14 @@ else
                             <div class="fs-4 fw-bold @GetBalanceClass(b.Balance)">
                                 @FormatCurrency(b.Balance)
                             </div>
+                            @if (b.AccruedInterest != 0)
+                            {
+                                var interestClass = b.AccruedInterest > 0 ? "text-success" : "text-danger";
+                                var interestSign  = b.AccruedInterest > 0 ? "+" : "";
+                                <div class="small @interestClass mt-1" title="Estimated accrued interest since last baseline">
+                                    ~@(interestSign)@FormatCurrency(b.AccruedInterest) interest accruing
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>

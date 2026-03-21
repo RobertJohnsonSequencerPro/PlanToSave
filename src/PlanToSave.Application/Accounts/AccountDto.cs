@@ -17,7 +17,9 @@ public record AccountBalanceDto(
     string Name,
     AccountType Type,
     decimal Balance,
-    DateOnly? LastSnapshotDate);
+    DateOnly? LastSnapshotDate,
+    decimal AccruedInterest,
+    decimal? AnnualRatePct);
 
 public record BalanceSnapshotDto(
     Guid Id,
@@ -25,6 +27,23 @@ public record BalanceSnapshotDto(
     DateOnly EffectiveDate,
     string? Note,
     DateTime CreatedAt);
+
+public record InterestRuleDto(
+    Guid Id,
+    decimal AnnualRatePct,
+    CompoundingFrequency Frequency,
+    DateOnly EffectiveDate,
+    DateTime CreatedAt);
+
+public class SetInterestRuleDto
+{
+    [Range(0.001, 100, ErrorMessage = "Rate must be between 0.001% and 100%")]
+    public decimal AnnualRatePct { get; set; }
+
+    public CompoundingFrequency Frequency { get; set; } = CompoundingFrequency.Monthly;
+
+    public DateOnly EffectiveDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+}
 
 public class CreateAccountDto
 {
