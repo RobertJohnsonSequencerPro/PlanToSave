@@ -45,6 +45,13 @@ else
         <button class="btn btn-sm btn-outline-danger" @onclick="DeletePlan">Delete Plan</button>
     </div>
 
+    @if (plan.PlannedDate.HasValue)
+    {
+        <div class="mb-3">
+            <AddToCalendarButton Title="@plan.IdeaTitle" Date="@plan.PlannedDate" Notes="@plan.Notes" />
+        </div>
+    }
+
     @if (!string.IsNullOrWhiteSpace(plan.Notes))
     {
         <div class="alert alert-secondary py-2 mb-3 small">

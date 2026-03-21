@@ -35,6 +35,7 @@ public class CreateActivityPlanDto
 public interface IActivityPlanService
 {
     Task<List<ActivityPlanDto>> GetPlansAsync(string userId);
+    Task<List<ActivityPlanDto>> GetPlansForMonthAsync(string userId, int year, int month);
     Task<ActivityPlanDto?> GetPlanAsync(string userId, Guid id);
     Task<Guid> CreateAsync(string userId, Guid ideaId, CreateActivityPlanDto dto);
     Task DeleteAsync(string userId, Guid id);

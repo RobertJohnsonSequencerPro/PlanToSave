@@ -1,0 +1,74 @@
+@inject IJSRuntime JS
+
+@if (Date.HasValue)
+{
+    <div class="d-inline-flex gap-1">
+        <a href="@GoogleCalendarUrl"
+           target="_blank" rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-secondary"
+           title="Add to Google Calendar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+            </svg>Google
+        </a>
+        <button class="btn btn-sm btn-outline-secondary"
+                type="button"
+                @onclick="DownloadIcs"
+                title="Download .ics for Apple Calendar / Outlook">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+            </svg>.ics
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public DateOnly? Date { get; set; }
+    [Parameter] public string? Notes { get; set; }
+
+    private string GoogleCalendarUrl => Date.HasValue
+        ? $"https://calendar.google.com/calendar/r/eventedit" +
+          $"?text={Uri.EscapeDataString(Title)}" +
+          $"&dates={Date.Value:yyyyMMdd}/{Date.Value.AddDays(1):yyyyMMdd}" +
+          $"&details={Uri.EscapeDataString(Notes ?? "")}"
+        : "#";
+
+    private async Task DownloadIcs()
+    {
+        if (!Date.HasValue) return;
+        var content = BuildIcsContent();
+        var filename = string.Concat(Title.Where(c => char.IsLetterOrDigit(c) || c == ' ')
+                                         .Take(40))
+                            .Trim()
+                            .Replace(' ', '_') + ".ics";
+        await JS.InvokeVoidAsync("downloadFile", filename, "text/calendar;charset=utf-8", content);
+    }
+
+    private string BuildIcsContent()
+    {
+        var dtStart = Date!.Value.ToString("yyyyMMdd");
+        var dtEnd   = Date!.Value.AddDays(1).ToString("yyyyMMdd");
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("BEGIN:VCALENDAR");
+        sb.AppendLine("VERSION:2.0");
+        sb.AppendLine("PRODID:-//PlanToSave//EN");
+        sb.AppendLine("BEGIN:VEVENT");
+        sb.AppendLine($"DTSTART;VALUE=DATE:{dtStart}");
+        sb.AppendLine($"DTEND;VALUE=DATE:{dtEnd}");
+        sb.AppendLine($"SUMMARY:{EscapeIcs(Title)}");
+        if (!string.IsNullOrWhiteSpace(Notes))
+            sb.AppendLine($"DESCRIPTION:{EscapeIcs(Notes)}");
+        sb.AppendLine($"UID:{Guid.NewGuid()}@plantosave");
+        sb.AppendLine("END:VEVENT");
+        sb.AppendLine("END:VCALENDAR");
+        return sb.ToString();
+    }
+
+    private static string EscapeIcs(string? s) =>
+        (s ?? "").Replace("\\", "\\\\")
+                 .Replace(",", "\\,")
+                 .Replace(";", "\\;")
+                 .Replace("\n", "\\n");
+}

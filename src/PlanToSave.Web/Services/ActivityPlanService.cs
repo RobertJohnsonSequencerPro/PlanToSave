@@ -40,6 +40,21 @@ public class ActivityPlanService(ApplicationDbContext db) : IActivityPlanService
             .ToList();
     }
 
+    public async Task<List<ActivityPlanDto>> GetPlansForMonthAsync(string userId, int year, int month)
+    {
+        var plans = await db.ActivityPlans
+            .Include(p => p.Idea)
+            .Include(p => p.Steps)
+            .Where(p => p.UserId == userId
+                     && p.PlannedDate.HasValue
+                     && p.PlannedDate.Value.Year == year
+                     && p.PlannedDate.Value.Month == month)
+            .OrderBy(p => p.PlannedDate)
+            .ToListAsync();
+
+        return plans.Select(ToDto).ToList();
+    }
+
     public async Task<ActivityPlanDto?> GetPlanAsync(string userId, Guid id)
     {
         var plan = await db.ActivityPlans

@@ -1,0 +1,175 @@
+@page "/calendar"
+@attribute [Authorize]
+@inject IActivityPlanService ActivityPlanService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Calendar — PlanToSave</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Calendar</h1>
+    <span class="text-muted small">Your activities at a glance</span>
+</div>
+
+@* Month navigation *@
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <button class="btn btn-outline-secondary btn-sm" @onclick="PrevMonth">&#8249; Prev</button>
+    <h5 class="mb-0 fw-semibold">@monthLabel</h5>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="NextMonth">Next &#8250;</button>
+</div>
+
+@* Day-of-week headers *@
+<div class="cal-header">
+    @foreach (var d in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+    {
+        <div class="cal-header-cell">@d</div>
+    }
+</div>
+
+@if (plans is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else
+{
+    @* Calendar cells *@
+    <div class="cal-grid">
+        @foreach (var dayNum in calendarCells)
+        {
+            var evs = dayNum > 0 && eventsByDay.ContainsKey(dayNum) ? eventsByDay[dayNum] : [];
+            bool isToday = dayNum > 0 && dayNum == todayDay && year == todayYear && month == todayMonth;
+            bool isSelected = dayNum > 0 && dayNum == selectedDay;
+
+            <div class="cal-cell @(dayNum == 0 ? "cal-empty" : "") @(isToday ? "cal-today" : "") @(isSelected ? "cal-selected" : "")"
+                 @onclick="() => SelectDay(dayNum)">
+                @if (dayNum > 0)
+                {
+                    <span class="cal-day-num @(isToday ? "text-primary" : "")">@dayNum</span>
+                    @foreach (var ev in evs.Take(3))
+                    {
+                        <div class="cal-event @GetStatusClass(ev.Status)">@ev.IdeaTitle</div>
+                    }
+                    @if (evs.Count > 3)
+                    {
+                        <div class="cal-more">+@(evs.Count - 3) more</div>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    @* Selected-day detail panel *@
+    @if (selectedDay > 0 && eventsByDay.TryGetValue(selectedDay, out var selectedEvents))
+    {
+        var selectedDate = new DateOnly(year, month, selectedDay);
+        <div class="card mt-4 border-primary">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <span class="fw-semibold">@selectedDate.ToString("dddd, MMMM d, yyyy")</span>
+                <button type="button" class="btn-close btn-sm" @onclick="() => selectedDay = 0"
+                        aria-label="Close"></button>
+            </div>
+            <ul class="list-group list-group-flush">
+                @foreach (var ev in selectedEvents)
+                {
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+                        <div>
+                            <span class="badge @GetStatusBadge(ev.Status) me-2">@ev.Status</span>
+                            <a href="/upcoming/@ev.Id" class="fw-semibold text-decoration-none">@ev.IdeaTitle</a>
+                            @if (!string.IsNullOrWhiteSpace(ev.Notes))
+                            {
+                                <div class="text-muted small mt-1">@ev.Notes</div>
+                            }
+                        </div>
+                        <AddToCalendarButton Title="@ev.IdeaTitle" Date="@ev.PlannedDate" Notes="@ev.Notes" />
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else if (selectedDay > 0)
+    {
+        var emptyLabel = new DateOnly(year, month, selectedDay).ToString("MMMM d");
+        <div class="card mt-4 text-center py-3 text-muted small">
+            Nothing scheduled on @emptyLabel.
+        </div>
+    }
+}
+
+@code {
+    private List<ActivityPlanDto>? plans;
+    private string userId = "";
+
+    private int year, month, selectedDay;
+    private List<int> calendarCells = [];
+    private Dictionary<int, List<ActivityPlanDto>> eventsByDay = new();
+
+    private static readonly int todayYear = DateTime.Today.Year;
+    private static readonly int todayMonth = DateTime.Today.Month;
+    private static readonly int todayDay = DateTime.Today.Day;
+
+    private string monthLabel => new DateTime(year, month, 1).ToString("MMMM yyyy");
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        year  = DateTime.Today.Year;
+        month = DateTime.Today.Month;
+        await LoadMonth();
+    }
+
+    private async Task LoadMonth()
+    {
+        plans = await ActivityPlanService.GetPlansForMonthAsync(userId, year, month);
+        BuildGrid();
+    }
+
+    private void BuildGrid()
+    {
+        selectedDay = 0;
+        eventsByDay = plans!
+            .GroupBy(p => p.PlannedDate!.Value.Day)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        int startOffset = (int)new DateTime(year, month, 1).DayOfWeek;
+        int daysInMonth = DateTime.DaysInMonth(year, month);
+        int totalCells  = (int)Math.Ceiling((startOffset + daysInMonth) / 7.0) * 7;
+
+        calendarCells = Enumerable.Range(0, totalCells)
+            .Select(i => { int d = i - startOffset + 1; return d >= 1 && d <= daysInMonth ? d : 0; })
+            .ToList();
+    }
+
+    private void SelectDay(int day)
+    {
+        if (day == 0) return;
+        selectedDay = selectedDay == day ? 0 : day; // toggle off if same day
+    }
+
+    private async Task PrevMonth()
+    {
+        var dt = new DateTime(year, month, 1).AddMonths(-1);
+        year = dt.Year; month = dt.Month;
+        await LoadMonth();
+    }
+
+    private async Task NextMonth()
+    {
+        var dt = new DateTime(year, month, 1).AddMonths(1);
+        year = dt.Year; month = dt.Month;
+        await LoadMonth();
+    }
+
+    private static string GetStatusClass(ActivityPlanStatus s) => s switch
+    {
+        ActivityPlanStatus.Done    => "cal-event-done",
+        ActivityPlanStatus.Skipped => "cal-event-skipped",
+        _                          => "cal-event-upcoming"
+    };
+
+    private static string GetStatusBadge(ActivityPlanStatus s) => s switch
+    {
+        ActivityPlanStatus.Done    => "bg-success",
+        ActivityPlanStatus.Skipped => "bg-secondary",
+        _                          => "bg-primary"
+    };
+}

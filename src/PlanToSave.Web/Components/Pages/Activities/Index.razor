@@ -86,6 +86,12 @@ else
                             <a href="/upcoming/@plan.Id" class="btn btn-sm btn-outline-secondary flex-fill">
                                 &#9776; Steps
                             </a>
+                            @if (plan.PlannedDate.HasValue)
+                            {
+                                <AddToCalendarButton Title="@plan.IdeaTitle"
+                                                    Date="@plan.PlannedDate"
+                                                    Notes="@plan.Notes" />
+                            }
                         </div>
                     </div>
                 </div>
