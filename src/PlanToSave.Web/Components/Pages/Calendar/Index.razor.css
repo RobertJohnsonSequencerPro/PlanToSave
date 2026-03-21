@@ -55,7 +55,7 @@
 .cal-day-num {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #111;
+    color: #000;
     display: block;
     margin-bottom: 3px;
 }
@@ -74,12 +74,12 @@
 
 .cal-event-upcoming {
     background-color: #cfe2ff;
-    color: #084298;
+    color: #000;
 }
 
 .cal-event-done {
     background-color: #d1e7dd;
-    color: #0f5132;
+    color: #000;
 }
 
 .cal-event-skipped {
@@ -89,17 +89,17 @@
 
 .cal-event-goal {
     background-color: #fff3cd;
-    color: #664d03;
+    color: #000;
 }
 
 .cal-event-contrib {
     background-color: #d1e7dd;
-    color: #0f5132;
+    color: #000;
 }
 
 .cal-event-custom {
     background-color: #e0f2fe;
-    color: #0c4a6e;
+    color: #000;
 }
 
 .cal-more {
@@ -149,17 +149,17 @@
 }
 
 [data-theme="dark"] .cal-day-num {
-    color: #e8edf3;
+    color: #ffffff;
 }
 
 [data-theme="dark"] .cal-event-upcoming {
     background-color: #1e3a6e;
-    color: #a8c8ff;
+    color: #ffffff;
 }
 
 [data-theme="dark"] .cal-event-done {
     background-color: #0f3a22;
-    color: #6ee09a;
+    color: #ffffff;
 }
 
 [data-theme="dark"] .cal-event-skipped {
@@ -169,17 +169,17 @@
 
 [data-theme="dark"] .cal-event-goal {
     background-color: #3a2c00;
-    color: #ffd866;
+    color: #ffffff;
 }
 
 [data-theme="dark"] .cal-event-contrib {
     background-color: #0f3a22;
-    color: #6ee09a;
+    color: #ffffff;
 }
 
 [data-theme="dark"] .cal-event-custom {
     background-color: #0c2a40;
-    color: #7dd3f8;
+    color: #ffffff;
 }
 
 [data-theme="dark"] .cal-more {
