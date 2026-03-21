@@ -5,11 +5,11 @@
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
-<PageTitle>Flows — PlanToSave</PageTitle>
+<PageTitle>Transactions — PlanToSave</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="mb-0">Flows</h1>
-    <a href="/flows/new" class="btn btn-primary">+ Log Flow</a>
+    <h1 class="mb-0">Transactions</h1>
+    <a href="/flows/new" class="btn btn-primary">+ Log Transaction</a>
 </div>
 
 @* ── Filters ────────────────────────────────────────────────────── *@
@@ -53,8 +53,8 @@
 else if (flows.Count == 0)
 {
     <div class="alert alert-info">
-        No flows found for the selected period.
-        <a href="/flows/new" class="alert-link ms-1">Log your first flow →</a>
+        No transactions found for the selected period.
+        <a href="/flows/new" class="alert-link ms-1">Log your first transaction →</a>
     </div>
 }
 else

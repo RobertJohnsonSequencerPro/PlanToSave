@@ -79,7 +79,7 @@ else
                                             <button class="btn btn-primary btn-sm" @onclick="() => SaveReconcile(account.Id)">Save</button>
                                         </div>
                                         <div class="text-muted small mt-2">
-                                            This records the actual balance on that date. Flows logged <em>after</em> that date will be added/subtracted from this baseline.
+                                            This records the actual balance on that date. Transactions logged <em>after</em> that date will be added/subtracted from this baseline.
                                         </div>
                                         @if (reconcileError is not null)
                                         {
@@ -123,11 +123,11 @@ else
         </div>
     }
 
-    @* Flow Accounts *@
+    @* Income & Expense Accounts *@
     var flowAccounts = accounts.Where(a => !a.IsStockAccount).ToList();
     @if (flowAccounts.Any())
     {
-        <h5 class="text-muted text-uppercase small fw-semibold mb-2 mt-4">Flow Accounts (Income &amp; Expense)</h5>
+        <h5 class="text-muted text-uppercase small fw-semibold mb-2 mt-4">Income &amp; Expense Accounts</h5>
         <div class="card mb-4">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">

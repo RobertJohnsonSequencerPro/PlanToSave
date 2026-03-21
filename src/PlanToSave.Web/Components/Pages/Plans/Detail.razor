@@ -71,15 +71,15 @@ else
         </div>
     </div>
 
-    <!-- Planned flows table -->
+    <!-- Planned transactions table -->
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h5 mb-0">Planned Flows</h2>
+        <h2 class="h5 mb-0">Planned Transactions</h2>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary btn-sm" @onclick="SeedTemplates" title="Add all active recurring templates">
                 Seed from Templates
             </button>
             <button class="btn btn-primary btn-sm" @onclick="ToggleAddForm">
-                @(showAddForm ? "Cancel" : "+ Add Flow")
+                @(showAddForm ? "Cancel" : "+ Add Transaction")
             </button>
         </div>
     </div>
@@ -96,7 +96,7 @@ else
     {
         <div class="card mb-3">
             <div class="card-body">
-                <h6 class="card-subtitle mb-3 text-muted">New Planned Flow</h6>
+                <h6 class="card-subtitle mb-3 text-muted">New Planned Transaction</h6>
                 <EditForm Model="newFlow" OnValidSubmit="AddFlow">
                     <DataAnnotationsValidator />
                     <div class="row g-2">
@@ -156,7 +156,7 @@ else
     @if (plan.PlannedFlows.Count == 0)
     {
         <div class="card text-center py-4 text-muted">
-            No planned flows yet. Add a flow or seed from templates.
+            No planned transactions yet. Add a transaction or seed from templates.
         </div>
     }
     else
