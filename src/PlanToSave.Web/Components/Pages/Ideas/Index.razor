@@ -290,6 +290,39 @@ else
                             <InputText @bind-Value="planForm.Notes" class="form-control" placeholder="Any notes for this activity..." />
                         </div>
                     </div>
+
+                    @* Steps section *@
+                    <div class="mt-3">
+                        <label class="form-label mb-1">Steps <span class="text-muted small">(optional — break it into pieces)</span></label>
+                        @if (planSteps.Count > 0)
+                        {
+                            <ol class="mb-2 ps-3" style="font-size:.88rem">
+                                @foreach (var (step, i) in planSteps.Select((s, i) => (s, i)))
+                                {
+                                    <li class="d-flex align-items-center justify-content-between gap-2 py-1 border-bottom">
+                                        <span class="flex-grow-1">@step</span>
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
+                                                @onclick="() => RemovePlanStep(i)" aria-label="Remove step">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                                            </svg>
+                                        </button>
+                                    </li>
+                                }
+                            </ol>
+                        }
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" placeholder="e.g. Book venue, Pack gear…"
+                                   @bind="newPlanStepTitle" @bind:event="oninput"
+                                   @onkeydown="OnPlanStepKeyDown" />
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="AddPlanStep"
+                                    disabled="@(string.IsNullOrWhiteSpace(newPlanStepTitle))">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
                     <ValidationSummary class="text-danger mt-2" />
                     @if (planError is not null)
                     {
@@ -941,6 +974,8 @@ else
     private string planningIdeaTitle = "";
     private CreateActivityPlanDto planForm = new();
     private string? planError;
+    private List<string> planSteps = [];
+    private string newPlanStepTitle = "";
 
     private void StartPlanThis(Guid id, string title)
     {
@@ -948,19 +983,51 @@ else
         planningIdeaTitle = title;
         planForm          = new CreateActivityPlanDto();
         planError         = null;
+        planSteps         = [];
+        newPlanStepTitle  = "";
         showAddForm       = false; // close the add-idea form if open
     }
 
-    private void CancelPlanThis() => planningIdeaId = null;
+    private void CancelPlanThis()
+    {
+        planningIdeaId   = null;
+        planSteps        = [];
+        newPlanStepTitle = "";
+    }
+
+    private void AddPlanStep()
+    {
+        var title = newPlanStepTitle.Trim();
+        if (!string.IsNullOrEmpty(title))
+        {
+            planSteps.Add(title);
+            newPlanStepTitle = "";
+        }
+    }
+
+    private void RemovePlanStep(int index)
+    {
+        if (index >= 0 && index < planSteps.Count)
+            planSteps.RemoveAt(index);
+    }
+
+    private void OnPlanStepKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddPlanStep();
+    }
 
     private async Task SavePlan()
     {
         if (!planningIdeaId.HasValue) return;
         try
         {
-            await ActivityPlanService.CreateAsync(userId, planningIdeaId.Value, planForm);
-            planningIdeaId = null;
-            planError      = null;
+            var newPlanId = await ActivityPlanService.CreateAsync(userId, planningIdeaId.Value, planForm);
+            foreach (var step in planSteps)
+                await ActivityPlanService.AddStepAsync(userId, newPlanId, step);
+            planningIdeaId   = null;
+            planError        = null;
+            planSteps        = [];
+            newPlanStepTitle = "";
             await LoadIdeas(); // refresh so Status badge updates
         }
         catch (Exception ex)
