@@ -1,0 +1,169 @@
+@page "/accounts/{AccountId:guid}/forecast"
+@attribute [Authorize]
+@inject IAccountService AccountService
+@inject NavigationManager Nav
+
+<PageTitle>Balance Forecast — PlanToSave</PageTitle>
+
+@if (forecast is null && !notFound)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (notFound)
+{
+    <div class="alert alert-warning">Account not found or not a stock account.</div>
+}
+else if (forecast is not null)
+{
+    <div class="d-flex align-items-center gap-2 mb-1">
+        <button class="btn btn-sm btn-outline-secondary" @onclick='() => Nav.NavigateTo("/dashboard")'>
+            ← Dashboard
+        </button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h1 class="mb-0">@forecast.Name</h1>
+            <span class="badge @GetTypeBadgeClass(forecast.Type) mt-1">@forecast.Type</span>
+        </div>
+        <div class="text-end">
+            <div class="text-muted small">Current Balance</div>
+            <div class="fs-3 fw-bold @GetBalanceClass(forecast.CurrentBalance)">
+                @FormatCurrency(forecast.CurrentBalance)
+            </div>
+        </div>
+    </div>
+
+    @* ── Balance Forecast Chart ── *@
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Balance Forecast</h5>
+                <div class="d-flex gap-3 small text-muted">
+                    <span>
+                        <svg width="18" height="8" class="me-1">
+                            <line x1="0" y1="4" x2="18" y2="4" stroke="#1b6ec2" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        Actual
+                    </span>
+                    <span>
+                        <svg width="18" height="8" class="me-1">
+                            <line x1="0" y1="4" x2="18" y2="4" stroke="#b45309" stroke-width="2" stroke-dasharray="4,3" stroke-linecap="round" />
+                        </svg>
+                        Projected
+                    </span>
+                </div>
+            </div>
+            @if (forecast.DataPoints.Count > 1)
+            {
+                <div style="width:100%;overflow-x:auto;">
+                    <SparklineChart DataPoints="forecast.DataPoints" Width="700" Height="160" />
+                </div>
+                @* Month labels *@
+                <div class="d-flex justify-content-between mt-1" style="font-size:0.7rem;color:#5a6472;">
+                    @foreach (var dp in forecast.DataPoints)
+                    {
+                        <span>@dp.Date.ToString("MMM yy")</span>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small">Not enough data to display a chart yet.</p>
+            }
+        </div>
+    </div>
+
+    @* ── Transaction List ── *@
+    <h5 class="text-muted text-uppercase small fw-semibold mb-3">Transactions</h5>
+
+    @if (transactions is null)
+    {
+        <p class="text-muted small">Loading transactions…</p>
+    }
+    else if (transactions.Count == 0)
+    {
+        <div class="card text-center py-4 text-muted">
+            No transactions yet for this account.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Counter-Account</th>
+                            <th class="text-end">Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tx in transactions)
+                        {
+                            var amtClass = tx.IsInflow ? "text-success" : "text-danger";
+                            var amtSign  = tx.IsInflow ? "+" : "−";
+                            <tr class="@(tx.IsProjected ? "text-muted fst-italic" : "")">
+                                <td class="text-nowrap">@tx.Date.ToString("MMM d, yyyy")</td>
+                                <td>@(tx.Description ?? "—")</td>
+                                <td>@tx.CounterAccountName</td>
+                                <td class="text-end fw-semibold @amtClass">
+                                    @amtSign@FormatCurrency(tx.Amount)
+                                </td>
+                                <td class="text-muted small">
+                                    @if (tx.IsProjected)
+                                    {
+                                        <span class="badge bg-secondary" title="Based on monthly plan">Planned</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid AccountId { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private AccountForecastDto?              forecast;
+    private List<AccountTransactionDto>?     transactions;
+    private bool                             notFound;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state  = await AuthState;
+        var userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        forecast = await AccountService.GetAccountForecastAsync(userId, AccountId);
+        if (forecast is null)
+        {
+            notFound = true;
+            return;
+        }
+        transactions = await AccountService.GetAccountTransactionsAsync(userId, AccountId);
+    }
+
+    private static string FormatCurrency(decimal amount) =>
+        amount.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+
+    private static string GetBalanceClass(decimal balance) =>
+        balance >= 0 ? "text-success" : "text-danger";
+
+    private static string GetTypeBadgeClass(AccountType type) => type switch
+    {
+        AccountType.Checking   => "bg-primary",
+        AccountType.Savings    => "bg-info text-dark",
+        AccountType.Credit     => "bg-warning text-dark",
+        AccountType.Investment => "bg-secondary",
+        _                      => "bg-light text-dark"
+    };
+}

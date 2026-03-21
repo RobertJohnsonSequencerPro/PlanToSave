@@ -264,6 +264,153 @@ public class AccountService(ApplicationDbContext db) : IAccountService
         }
     }
 
+    public async Task<AccountForecastDto?> GetAccountForecastAsync(
+        string userId, Guid accountId, int pastMonths = 6, int futureMonths = 6)
+    {
+        var account = await db.Accounts
+            .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId && !a.IsArchived);
+        if (account is null || !account.IsStockAccount) return null;
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        // Load all actual flows for this account
+        var actualFlows = await db.ActualFlows
+            .Where(f => f.UserId == userId &&
+                        (f.ToAccountId == accountId || f.FromAccountId == accountId))
+            .Select(f => new { f.FromAccountId, f.ToAccountId, f.Amount, f.Date })
+            .ToListAsync();
+
+        // Latest snapshot (determines the baseline balance)
+        var latestSnapshot = await db.BalanceSnapshots
+            .Where(s => s.UserId == userId && s.AccountId == accountId)
+            .OrderByDescending(s => s.EffectiveDate)
+            .Select(s => new { s.Amount, s.EffectiveDate })
+            .FirstOrDefaultAsync();
+
+        var snapCutoff    = latestSnapshot?.EffectiveDate;
+        var baseBalance   = latestSnapshot?.Amount ?? account.OpeningBalance;
+
+        // Compute the balance as of any given date using actual flows
+        decimal BalanceAt(DateOnly asOf)
+        {
+            var inflows  = actualFlows
+                .Where(f => f.ToAccountId == accountId &&
+                            f.Date <= asOf &&
+                            (snapCutoff is null || f.Date > snapCutoff))
+                .Sum(f => f.Amount);
+            var outflows = actualFlows
+                .Where(f => f.FromAccountId == accountId &&
+                            f.Date <= asOf &&
+                            (snapCutoff is null || f.Date > snapCutoff))
+                .Sum(f => f.Amount);
+            return baseBalance + inflows - outflows;
+        }
+
+        // Current balance (as of today)
+        var currentBalance = BalanceAt(today);
+
+        var dataPoints = new List<BalanceDataPoint>();
+
+        // Helper to get the last day of a given month
+        static DateOnly EndOfMonth(DateOnly d) =>
+            new(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month));
+
+        // ── Past months ────────────────────────────────────────────────
+        for (int i = pastMonths; i >= 1; i--)
+        {
+            var eom = EndOfMonth(today.AddMonths(-i));
+            dataPoints.Add(new BalanceDataPoint(eom, BalanceAt(eom), IsProjected: false));
+        }
+
+        // Today's balance (the boundary point — shown as actual)
+        dataPoints.Add(new BalanceDataPoint(today, currentBalance, IsProjected: false));
+
+        // ── Future months: apply planned flows ─────────────────────────
+        var plannedFlows = await db.PlannedFlows
+            .Include(pf => pf.MonthlyPlan)
+            .Where(pf => pf.MonthlyPlan.UserId == userId &&
+                         (pf.ToAccountId == accountId || pf.FromAccountId == accountId))
+            .Select(pf => new
+            {
+                pf.FromAccountId,
+                pf.ToAccountId,
+                pf.Amount,
+                pf.MonthlyPlan.Year,
+                pf.MonthlyPlan.Month
+            })
+            .ToListAsync();
+
+        var runningBalance = currentBalance;
+        for (int i = 1; i <= futureMonths; i++)
+        {
+            var month = today.AddMonths(i);
+            // Sum of all planned inflows minus outflows for this account in this month.
+            // Evaluates to 0 when no planned flows exist for the month (correct behaviour).
+            var netPlanned = plannedFlows
+                .Where(pf => pf.Year == month.Year && pf.Month == month.Month)
+                .Sum(pf => pf.ToAccountId == accountId ? pf.Amount : -pf.Amount);
+            runningBalance += netPlanned;
+            dataPoints.Add(new BalanceDataPoint(EndOfMonth(month), runningBalance, IsProjected: true));
+        }
+
+        return new AccountForecastDto(accountId, account.Name, account.Type, currentBalance, dataPoints);
+    }
+
+    public async Task<List<AccountTransactionDto>> GetAccountTransactionsAsync(
+        string userId, Guid accountId)
+    {
+        var account = await db.Accounts
+            .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId);
+        if (account is null) return [];
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        // Actual flows
+        var actualFlows = await db.ActualFlows
+            .Include(f => f.FromAccount)
+            .Include(f => f.ToAccount)
+            .Where(f => f.UserId == userId &&
+                        (f.ToAccountId == accountId || f.FromAccountId == accountId))
+            .OrderByDescending(f => f.Date)
+            .ToListAsync();
+
+        var result = actualFlows.Select(f => new AccountTransactionDto(
+            f.Date,
+            f.Amount,
+            IsInflow: f.ToAccountId == accountId,
+            CounterAccountName: f.ToAccountId == accountId ? f.FromAccount.Name : f.ToAccount.Name,
+            f.Description,
+            IsProjected: false)).ToList();
+
+        // Planned flows from future monthly plans
+        var plannedFlows = await db.PlannedFlows
+            .Include(pf => pf.MonthlyPlan)
+            .Include(pf => pf.FromAccount)
+            .Include(pf => pf.ToAccount)
+            .Where(pf => pf.MonthlyPlan.UserId == userId &&
+                         (pf.ToAccountId == accountId || pf.FromAccountId == accountId) &&
+                         (pf.MonthlyPlan.Year > today.Year ||
+                          (pf.MonthlyPlan.Year == today.Year && pf.MonthlyPlan.Month >= today.Month)))
+            .ToListAsync();
+
+        var projected = plannedFlows.Select(pf =>
+        {
+            // Use the first day of the plan month as the date
+            var date = new DateOnly(pf.MonthlyPlan.Year, pf.MonthlyPlan.Month, 1);
+            return new AccountTransactionDto(
+                date,
+                pf.Amount,
+                IsInflow: pf.ToAccountId == accountId,
+                CounterAccountName: pf.ToAccountId == accountId ? pf.FromAccount.Name : pf.ToAccount.Name,
+                pf.Description,
+                IsProjected: true);
+        });
+
+        result.AddRange(projected);
+        result.Sort((a, b) => b.Date.CompareTo(a.Date));
+        return result;
+    }
+
     private static decimal ComputeAccruedInterest(
         decimal balance, decimal annualRatePct, CompoundingFrequency frequency,
         DateOnly fromDate, DateOnly toDate)

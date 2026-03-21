@@ -1,0 +1,90 @@
+@*
+  Pure-SVG sparkline chart.
+  Renders historical data points in blue and projected data points in amber.
+  The dividing line (today) is drawn as a dashed vertical separator.
+*@
+
+@if (DataPoints is { Count: > 1 })
+{
+    var pts       = DataPoints;
+    var minBal    = pts.Min(p => p.Balance);
+    var maxBal    = pts.Max(p => p.Balance);
+    var range     = maxBal - minBal;
+    // Add a bit of vertical padding so the line doesn't touch the edges
+    var padFactor = range == 0 ? 1m : 0.1m;
+    var lo        = minBal - range * padFactor;
+    var hi        = maxBal + range * padFactor;
+    var span      = hi - lo;
+    if (span == 0) span = 1;
+
+    double W = Width;
+    double H = Height;
+
+    double XOf(int i)  => W * i / (pts.Count - 1);
+    double YOf(decimal v) => H - (double)((v - lo) / span) * H;
+
+    // Split at the boundary between actual and projected
+    var splitIdx = pts.FindLastIndex(p => !p.IsProjected);
+    // Points for the actual line (up to and including the split point)
+    var actualPts     = pts.Take(splitIdx + 1).ToList();
+    // Points for the projected line (from split point onward, so lines connect)
+    var projectedPts  = splitIdx >= 0 && splitIdx < pts.Count - 1
+        ? pts.Skip(splitIdx).ToList()
+        : new List<BalanceDataPoint>();
+
+    string Polyline(IList<BalanceDataPoint> subset, int offset)
+        => string.Join(" ", subset.Select((p, i) =>
+            $"{XOf(offset + i):F1},{YOf(p.Balance):F1}"));
+
+    var actualPolyline    = Polyline(actualPts, 0);
+    var projectedPolyline = projectedPts.Count > 1
+        ? Polyline(projectedPts, splitIdx)
+        : string.Empty;
+
+    // Zero line (if applicable)
+    var showZeroLine = lo < 0 && hi > 0;
+    var zeroY = YOf(0);
+
+    <svg width="@Width" height="@Height" viewBox="0 0 @Width @Height"
+         xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+
+        @* Zero baseline *@
+        @if (showZeroLine)
+        {
+            <line x1="0" y1="@zeroY.ToString("F1")" x2="@Width" y2="@zeroY.ToString("F1")"
+                  stroke="#dee2e6" stroke-width="1" stroke-dasharray="2,2" />
+        }
+
+        @* Actual (historical) line *@
+        @if (actualPts.Count > 1)
+        {
+            <polyline points="@actualPolyline"
+                      fill="none" stroke="#1b6ec2" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" />
+        }
+
+        @* Projected (future) line *@
+        @if (projectedPolyline.Length > 0)
+        {
+            <polyline points="@projectedPolyline"
+                      fill="none" stroke="#b45309" stroke-width="2"
+                      stroke-dasharray="4,3"
+                      stroke-linecap="round" stroke-linejoin="round" />
+        }
+
+        @* Divider at today (split point) *@
+        @if (splitIdx > 0 && splitIdx < pts.Count - 1)
+        {
+            var divX = XOf(splitIdx);
+            <line x1="@divX.ToString("F1")" y1="0"
+                  x2="@divX.ToString("F1")" y2="@Height"
+                  stroke="#adb5bd" stroke-width="1" stroke-dasharray="3,2" />
+        }
+    </svg>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<BalanceDataPoint> DataPoints { get; set; } = [];
+    [Parameter] public double Width  { get; set; } = 200;
+    [Parameter] public double Height { get; set; } = 60;
+}
