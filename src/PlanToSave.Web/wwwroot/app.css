@@ -6,6 +6,7 @@ html, body {
 
 body {
     font-size: 1.0625rem; /* ≈17 px — slightly larger base for readability */
+    color: #111; /* near-black — Bootstrap default #212529 reads as charcoal */
 }
 
 a, .btn-link {
