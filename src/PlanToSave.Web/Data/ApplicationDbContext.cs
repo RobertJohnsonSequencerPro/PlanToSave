@@ -7,6 +7,7 @@ namespace PlanToSave.Web.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<BalanceSnapshot> BalanceSnapshots => Set<BalanceSnapshot>();
     public DbSet<FlowTemplate> FlowTemplates => Set<FlowTemplate>();
     public DbSet<MonthlyPlan> MonthlyPlans => Set<MonthlyPlan>();
     public DbSet<PlannedFlow> PlannedFlows => Set<PlannedFlow>();
@@ -115,6 +116,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(g => g.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── BalanceSnapshots ──────────────────────────────────────────
+        builder.Entity<BalanceSnapshot>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.Property(s => s.Amount).HasPrecision(18, 2);
+            e.Property(s => s.Note).HasMaxLength(300);
+            e.HasIndex(s => new { s.UserId, s.AccountId });
+            e.HasOne(s => s.Account).WithMany().HasForeignKey(s => s.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -42,11 +42,16 @@ else
                     <tbody>
                         @foreach (var account in stockAccounts)
                         {
+                            var isReconciling = reconcileAccountId == account.Id;
                             <tr>
                                 <td class="fw-semibold">@account.Name</td>
                                 <td><span class="badge @GetTypeBadgeClass(account.Type)">@account.Type</span></td>
                                 <td class="text-muted small">@(account.Description ?? "—")</td>
                                 <td class="text-end">
+                                    <button class="btn btn-sm @(isReconciling ? "btn-outline-secondary" : "btn-outline-primary") me-1"
+                                            @onclick="() => ToggleReconcile(account.Id)">
+                                        @(isReconciling ? "Cancel" : "Set Balance")
+                                    </button>
                                     <a href="/accounts/@account.Id/edit" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
                                     <button class="btn btn-sm btn-outline-danger"
                                             @onclick="() => ArchiveAccount(account.Id, account.Name)">
@@ -54,6 +59,48 @@ else
                                     </button>
                                 </td>
                             </tr>
+                            @if (isReconciling)
+                            {
+                                <tr class="table-light">
+                                    <td colspan="4" class="px-4 py-3">
+                                        <div class="d-flex flex-wrap gap-2 align-items-end">
+                                            <div>
+                                                <label class="form-label small mb-1 fw-semibold">Balance as of date</label>
+                                                <InputDate @bind-Value="reconcileDate" class="form-control form-control-sm" style="width:160px" />
+                                            </div>
+                                            <div>
+                                                <label class="form-label small mb-1 fw-semibold">Amount ($)</label>
+                                                <InputNumber @bind-Value="reconcileAmount" class="form-control form-control-sm" style="width:140px" step="0.01" />
+                                            </div>
+                                            <div style="min-width:200px">
+                                                <label class="form-label small mb-1 fw-semibold">Note <span class="fw-normal text-muted">(optional)</span></label>
+                                                <InputText @bind-Value="reconcileNote" class="form-control form-control-sm" placeholder="e.g. Bank statement" />
+                                            </div>
+                                            <button class="btn btn-primary btn-sm" @onclick="() => SaveReconcile(account.Id)">Save</button>
+                                        </div>
+                                        <div class="text-muted small mt-2">
+                                            This records the actual balance on that date. Flows logged <em>after</em> that date will be added/subtracted from this baseline.
+                                        </div>
+                                        @if (reconcileError is not null)
+                                        {
+                                            <div class="text-danger small mt-1">@reconcileError</div>
+                                        }
+                                        @if (snapshots.Count > 0)
+                                        {
+                                            <div class="mt-2">
+                                                <span class="text-muted small fw-semibold">Past reconciliations:</span>
+                                                @foreach (var s in snapshots.Take(3))
+                                                {
+                                                    <span class="badge bg-light text-dark border ms-1">
+                                                        @s.EffectiveDate.ToString("MMM d, yyyy") → @s.Amount.ToString("C")
+                                                        @if (s.Note is not null) { <text> (@s.Note)</text> }
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
@@ -160,6 +207,14 @@ else
     private bool showArchived = false;
     private string? errorMessage;
 
+    // Reconcile state
+    private Guid? reconcileAccountId;
+    private DateOnly reconcileDate = DateOnly.FromDateTime(DateTime.Today);
+    private decimal reconcileAmount;
+    private string? reconcileNote;
+    private string? reconcileError;
+    private List<BalanceSnapshotDto> snapshots = [];
+
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthState;
@@ -170,9 +225,40 @@ else
     private async Task LoadAccounts()
     {
         accounts = await AccountService.GetAccountsAsync(userId, includeArchived: true);
-        // Filter based on showArchived toggle — we load all so toggling is instant
         if (!showArchived)
             accounts = accounts.Where(a => !a.IsArchived).ToList();
+    }
+
+    private async Task ToggleReconcile(Guid accountId)
+    {
+        if (reconcileAccountId == accountId)
+        {
+            reconcileAccountId = null;
+            snapshots = [];
+            reconcileError = null;
+            return;
+        }
+        reconcileAccountId = accountId;
+        reconcileDate = DateOnly.FromDateTime(DateTime.Today);
+        reconcileAmount = 0;
+        reconcileNote = null;
+        reconcileError = null;
+        snapshots = await AccountService.GetSnapshotsAsync(userId, accountId);
+    }
+
+    private async Task SaveReconcile(Guid accountId)
+    {
+        reconcileError = null;
+        try
+        {
+            await AccountService.SetSnapshotAsync(userId, accountId, reconcileAmount, reconcileDate, reconcileNote);
+            snapshots = await AccountService.GetSnapshotsAsync(userId, accountId);
+            reconcileNote = null;
+        }
+        catch (Exception ex)
+        {
+            reconcileError = ex.Message;
+        }
     }
 
     private async Task ToggleArchived()

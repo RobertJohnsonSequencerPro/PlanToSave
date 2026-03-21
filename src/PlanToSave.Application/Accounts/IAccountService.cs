@@ -8,4 +8,6 @@ public interface IAccountService
     Task UpdateAsync(Guid id, string userId, UpdateAccountDto dto);
     Task ArchiveAsync(Guid id, string userId);
     Task<List<AccountBalanceDto>> GetBalancesAsync(string userId);
+    Task SetSnapshotAsync(string userId, Guid accountId, decimal amount, DateOnly effectiveDate, string? note);
+    Task<List<BalanceSnapshotDto>> GetSnapshotsAsync(string userId, Guid accountId);
 }

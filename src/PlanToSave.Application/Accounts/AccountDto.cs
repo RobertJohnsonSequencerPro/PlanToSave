@@ -16,7 +16,15 @@ public record AccountBalanceDto(
     Guid Id,
     string Name,
     AccountType Type,
-    decimal Balance);
+    decimal Balance,
+    DateOnly? LastSnapshotDate);
+
+public record BalanceSnapshotDto(
+    Guid Id,
+    decimal Amount,
+    DateOnly EffectiveDate,
+    string? Note,
+    DateTime CreatedAt);
 
 public class CreateAccountDto
 {
