@@ -110,7 +110,7 @@ h1:focus {
     --bs-body-bg:          #1a1d24;
     --bs-body-color:       #ffffff;
     --bs-border-color:     #3a4258;
-    --bs-secondary-color:  #c8d4e0;
+    --bs-secondary-color:  rgba(255,255,255,0.6);
     --bs-tertiary-bg:      #252c3d;
     --bs-card-bg:          #21272f;
     --bs-card-border-color:#3a4258;
@@ -133,9 +133,9 @@ h1:focus {
 [data-theme="dark"] .text-secondary { color: #c8d4e0 !important; }
 
 [data-theme="dark"] a,
-[data-theme="dark"] .btn-link       { color: #74b8ff; }
+[data-theme="dark"] .btn-link       { color: rgba(255,255,255,0.85); }
 [data-theme="dark"] a:hover,
-[data-theme="dark"] .btn-link:hover { color: #a2d0ff; }
+[data-theme="dark"] .btn-link:hover { color: #fff; }
 
 /* ── Background utilities ────────────────────────────────── */
 [data-theme="dark"] .bg-white  { background-color: #21272f !important; }
@@ -309,13 +309,13 @@ h1:focus {
 [data-theme="dark"] .text-info    { color: #7dd3fc !important; }
 
 /* ── Warning/info backgrounds in dark mode ───────────────── */
-/* Keep consistent accessible amber for bg-warning */
+/* Yellow badge matching the Ideas stage border color */
 [data-theme="dark"] .bg-warning {
-    background-color: #b45309 !important;
+    background-color: #ffc107 !important;
+    color: #111 !important;
 }
-[data-theme="dark"] .bg-warning,
 [data-theme="dark"] .bg-warning.text-dark {
-    color: #fff !important;
+    color: #111 !important;
 }
 /* Keep accessible teal for bg-info */
 [data-theme="dark"] .bg-info {
