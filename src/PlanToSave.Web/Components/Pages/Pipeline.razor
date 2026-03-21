@@ -469,13 +469,9 @@ else
         var state  = await AuthState;
         var userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
-        var ideasTask = IdeaService.GetIdeasAsync(userId, new IdeaFilterDto { Status = IdeaStatus.Backlog });
-        var goalsTask = GoalService.GetGoalsAsync(userId);
-        var planTask  = PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
-        await Task.WhenAll(ideasTask, goalsTask, planTask);
-        var ideas = ideasTask.Result;
-        var goals = goalsTask.Result;
-        var plan  = planTask.Result;
+        var ideas = await IdeaService.GetIdeasAsync(userId, new IdeaFilterDto { Status = IdeaStatus.Backlog });
+        var goals = await GoalService.GetGoalsAsync(userId);
+        var plan  = await PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
 
         backlogIdeas  = ideas;
         activeGoals   = goals.Where(g => !g.IsComplete).ToList();
