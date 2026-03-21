@@ -18,60 +18,6 @@
 }
 else
 {
-    @* Pipeline strip *@
-    <div class="d-flex justify-content-between align-items-baseline mb-2">
-        <h5 class="text-muted text-uppercase small fw-semibold mb-0">Your Pipeline</h5>
-        <a href="/pipeline" class="text-muted small text-decoration-none">Full journey view →</a>
-    </div>
-    <div class="d-flex align-items-stretch mb-3">
-        <a href="/ideas" class="text-decoration-none flex-fill">
-            <div class="card h-100 text-center py-3 px-1 @(BacklogCount > 0 ? "border-warning" : "")">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="@(BacklogCount > 0 ? "text-warning" : "text-muted") d-block mx-auto mb-1" viewBox="0 0 16 16">
-                    <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z"/>
-                </svg>
-                <div class="fs-3 fw-bold @(BacklogCount > 0 ? "text-warning" : "text-muted")">@BacklogCount</div>
-                <div class="small fw-semibold text-body">Ideas</div>
-                <div class="text-muted" style="font-size:0.72rem">in backlog</div>
-            </div>
-        </a>
-        <div class="d-flex align-items-center px-2 text-muted" style="font-size:1.25rem">›</div>
-        <a href="/goals" class="text-decoration-none flex-fill">
-            <div class="card h-100 text-center py-3 px-1 @(activeGoals.Count > 0 ? "border-primary" : "")">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="@(activeGoals.Count > 0 ? "text-primary" : "text-muted") d-block mx-auto mb-1" viewBox="0 0 16 16">
-                    <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5c0 .538-.012 1.05-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33.076 33.076 0 0 1 2.5.5zm.099 2.54a2 2 0 0 0 .72 3.935c-.333-1.05-.588-2.346-.72-3.935zm10.083 3.935a2 2 0 0 0 .72-3.935c-.133 1.59-.388 2.885-.72 3.935z"/>
-                </svg>
-                <div class="fs-3 fw-bold @(activeGoals.Count > 0 ? "text-primary" : "text-muted")">@activeGoals.Count</div>
-                <div class="small fw-semibold text-body">Goals</div>
-                <div class="text-muted" style="font-size:0.72rem">being funded</div>
-            </div>
-        </a>
-        <div class="d-flex align-items-center px-2 text-muted" style="font-size:1.25rem">›</div>
-        <a href="/plans/@DateTime.Today.Year/@DateTime.Today.Month" class="text-decoration-none flex-fill">
-            <div class="card h-100 text-center py-3 px-1 @(PipelinePlanned > 0 ? "border-info" : "")">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="@(PipelinePlanned > 0 ? "text-info" : "text-muted") d-block mx-auto mb-1" viewBox="0 0 16 16">
-                    <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zM1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857V3.857z"/>
-                    <path d="M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
-                </svg>
-                <div class="fs-3 fw-bold @(PipelinePlanned > 0 ? "text-info" : "text-muted")">@PipelinePlanned</div>
-                <div class="small fw-semibold text-body">Planned</div>
-                <div class="text-muted" style="font-size:0.72rem">flows this month</div>
-            </div>
-        </a>
-        <div class="d-flex align-items-center px-2 text-muted" style="font-size:1.25rem">›</div>
-        <a href="/review" class="text-decoration-none flex-fill">
-            <div class="card h-100 text-center py-3 px-1 @PipelineLoggedBorder">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="@PipelineLoggedClass d-block mx-auto mb-1" viewBox="0 0 16 16">
-                    <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/>
-                </svg>
-                <div class="fs-3 fw-bold @PipelineLoggedClass">
-                    @PipelineLogged<span class="fs-6 fw-normal text-muted">/@PipelinePlanned</span>
-                </div>
-                <div class="small fw-semibold text-body">Logged</div>
-                <div class="text-muted" style="font-size:0.72rem">this month</div>
-            </div>
-        </a>
-    </div>
-
     @* Backlog nudge: ideas with no goal *@
     @if (UnlinkedBacklogCount > 0)
     {
@@ -240,15 +186,6 @@ else
     private List<GoalDto> activeGoals = [];
     private List<IdeaDto> allIdeas = [];
     private MonthlyPlanDetailDto? currentPlan;
-
-    private int BacklogCount => allIdeas.Count(i => i.Status == IdeaStatus.Backlog);
-
-    private int    PipelinePlanned    => currentPlan?.PlannedFlows.Count ?? 0;
-    private int    PipelineLogged     => currentPlan?.PlannedFlows.Count(f => f.ActualAmount != 0) ?? 0;
-    private string PipelineLoggedClass  => PipelinePlanned > 0 && PipelineLogged == PipelinePlanned ? "text-success"
-                                         : PipelineLogged > 0 ? "text-warning" : "text-muted";
-    private string PipelineLoggedBorder => PipelinePlanned > 0 && PipelineLogged == PipelinePlanned ? "border-success"
-                                         : PipelinePlanned > 0 ? "border-warning" : "";
 
     private int UnlinkedBacklogCount
     {
