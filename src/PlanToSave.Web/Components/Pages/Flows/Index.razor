@@ -10,10 +10,75 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">Transactions</h1>
     <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="OpenAccountModal">+ New Account</button>
         <a href="/flows/import" class="btn btn-outline-primary">⬆ Import CSV</a>
         <a href="/flows/new" class="btn btn-primary">+ Log Transaction</a>
     </div>
 </div>
+
+@if (showAccountModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New Account or Category</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAccountModal"></button>
+                </div>
+                <EditForm Model="newAccount" OnValidSubmit="SaveNewAccount">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Account Name</label>
+                            <InputText @bind-Value="newAccount.Name" class="form-control" placeholder="e.g. Main Checking" />
+                            <ValidationMessage For="() => newAccount.Name" class="text-danger small" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Account Type</label>
+                            <InputSelect @bind-Value="newAccount.Type" class="form-select">
+                                @foreach (var t in Enum.GetValues<AccountType>())
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            </InputSelect>
+                            <div class="form-text text-muted">@GetAccountTypeHint(newAccount.Type)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Description <span class="fw-normal text-muted">(optional)</span>
+                            </label>
+                            <InputText @bind-Value="newAccount.Description" class="form-control"
+                                       placeholder="e.g. Joint account at First National Bank" />
+                        </div>
+                        @if (newAccount.Type is AccountType.Checking or AccountType.Savings
+                                             or AccountType.Credit or AccountType.Investment)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    Opening Balance <span class="fw-normal text-muted">(optional)</span>
+                                </label>
+                                <div class="input-group" style="max-width:200px">
+                                    <span class="input-group-text">$</span>
+                                    <InputNumber @bind-Value="newAccount.OpeningBalance" class="form-control" step="0.01" />
+                                </div>
+                                <ValidationMessage For="() => newAccount.OpeningBalance" class="text-danger small" />
+                            </div>
+                        }
+                        @if (accountSaveError is not null)
+                        {
+                            <div class="text-danger small">@accountSaveError</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseAccountModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Account</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
 
 @* ── Filters ────────────────────────────────────────────────────── *@
 <div class="card mb-4">
@@ -136,6 +201,11 @@ else
     private DateOnly filterTo = DateOnly.FromDateTime(DateTime.Today);
     private Guid? filterAccountId;
 
+    // Account modal
+    private bool showAccountModal = false;
+    private CreateAccountDto newAccount = new();
+    private string? accountSaveError;
+
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthState;
@@ -205,5 +275,42 @@ else
         AccountType.Credit     => "bg-warning text-dark",
         AccountType.Investment => "bg-secondary",
         _                      => "bg-light text-dark"
+    };
+
+    private void OpenAccountModal()
+    {
+        newAccount = new CreateAccountDto();
+        accountSaveError = null;
+        showAccountModal = true;
+    }
+
+    private void CloseAccountModal() => showAccountModal = false;
+
+    private async Task SaveNewAccount()
+    {
+        try
+        {
+            await AccountService.CreateAsync(userId, newAccount);
+            var fromOptions = await FlowService.GetFromAccountOptionsAsync(userId);
+            var toOptions = await FlowService.GetToAccountOptionsAsync(userId);
+            accountOptions = fromOptions.Union(toOptions).DistinctBy(a => a.Id)
+                                        .OrderBy(a => a.Name).ToList();
+            showAccountModal = false;
+        }
+        catch (Exception ex)
+        {
+            accountSaveError = ex.Message;
+        }
+    }
+
+    private static string GetAccountTypeHint(AccountType type) => type switch
+    {
+        AccountType.Checking   => "Everyday spending account with a running balance.",
+        AccountType.Savings    => "Savings account that earns interest.",
+        AccountType.Credit     => "Credit card or line of credit.",
+        AccountType.Investment => "Brokerage or investment account.",
+        AccountType.Income     => "An income source (salary, freelance, etc.) — no balance tracked.",
+        AccountType.Expense    => "A spending category (groceries, utilities, dining, etc.) — no balance tracked.",
+        _                      => ""
     };
 }
