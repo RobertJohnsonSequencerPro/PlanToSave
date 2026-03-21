@@ -1,0 +1,181 @@
+@page "/accounts/new"
+@page "/accounts/{Id:guid}/edit"
+@attribute [Authorize]
+@inject IAccountService AccountService
+@inject NavigationManager Nav
+
+<PageTitle>@(Id is null ? "New Account" : "Edit Account") — PlanToSave</PageTitle>
+
+<div class="row">
+    <div class="col-md-7 col-lg-5">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/accounts">Accounts</a></li>
+                <li class="breadcrumb-item active">@(Id is null ? "New Account" : "Edit Account")</li>
+            </ol>
+        </nav>
+
+        <h1 class="mb-4">@(Id is null ? "New Account" : "Edit Account")</h1>
+
+        @if (model is not null)
+        {
+            <EditForm Model="model" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Account Name</label>
+                    <InputText @bind-Value="model.Name" class="form-control" placeholder="e.g. Main Checking" />
+                    <ValidationMessage For="() => model.Name" class="text-danger small" />
+                </div>
+
+                @if (Id is null)
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Account Type</label>
+                        <InputSelect @bind-Value="model.Type" class="form-select">
+                            @foreach (var type in Enum.GetValues<AccountType>())
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </InputSelect>
+                        <div class="form-text text-muted mt-1">@GetTypeHint(model.Type)</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Account Type</label>
+                        <input type="text" class="form-control" value="@existingType" disabled />
+                        <div class="form-text text-muted">Account type cannot be changed after creation.</div>
+                    </div>
+                }
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        Description <span class="fw-normal text-muted">(optional)</span>
+                    </label>
+                    <InputTextArea @bind-Value="model.Description" class="form-control" rows="2"
+                                   placeholder="e.g. Joint account at First National Bank" />
+                    <ValidationMessage For="() => model.Description" class="text-danger small" />
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" disabled="@saving">
+                        @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Save
+                    </button>
+                    <a href="/accounts" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </EditForm>
+        }
+        else if (notFound)
+        {
+            <div class="alert alert-warning">Account not found.</div>
+            <a href="/accounts" class="btn btn-secondary">Back to Accounts</a>
+        }
+        else
+        {
+            <p class="text-muted">Loading...</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private AccountFormModel? model;
+    private string userId = "";
+    private string existingType = "";
+    private bool saving = false;
+    private bool notFound = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        if (Id is not null)
+        {
+            var account = await AccountService.GetByIdAsync(Id.Value, userId);
+            if (account is null) { notFound = true; return; }
+
+            existingType = account.Type.ToString();
+            model = new AccountFormModel
+            {
+                Name = account.Name,
+                Type = account.Type,
+                Description = account.Description
+            };
+        }
+        else
+        {
+            model = new AccountFormModel();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (model is null) return;
+        saving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (Id is null)
+            {
+                await AccountService.CreateAsync(userId, new CreateAccountDto
+                {
+                    Name = model.Name,
+                    Type = model.Type,
+                    Description = model.Description
+                });
+            }
+            else
+            {
+                await AccountService.UpdateAsync(Id.Value, userId, new UpdateAccountDto
+                {
+                    Name = model.Name,
+                    Description = model.Description
+                });
+            }
+            Nav.NavigateTo("/accounts");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Could not save account: {ex.Message}";
+            saving = false;
+        }
+    }
+
+    private static string GetTypeHint(AccountType type) => type switch
+    {
+        AccountType.Income     => "Money flowing in from the outside world (salary, freelance, etc.). No running balance — period totals only.",
+        AccountType.Expense    => "Money flowing out to the world (groceries, utilities, etc.). No running balance — period totals only.",
+        AccountType.Checking   => "A day-to-day bank account. Tracks a running balance.",
+        AccountType.Savings    => "A savings account. Tracks a running balance.",
+        AccountType.Credit     => "A credit card or line of credit. Balance goes negative as you spend, positive when paid off.",
+        AccountType.Investment => "A retirement or brokerage account. Tracks a running balance.",
+        _                      => ""
+    };
+
+    private class AccountFormModel
+    {
+        [Required(ErrorMessage = "Account name is required")]
+        [MaxLength(100, ErrorMessage = "Name must be 100 characters or less")]
+        public string Name { get; set; } = string.Empty;
+
+        public AccountType Type { get; set; } = AccountType.Checking;
+
+        [MaxLength(500, ErrorMessage = "Description must be 500 characters or less")]
+        public string? Description { get; set; }
+    }
+}
