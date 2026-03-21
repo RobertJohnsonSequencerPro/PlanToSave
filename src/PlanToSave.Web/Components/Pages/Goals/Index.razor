@@ -10,7 +10,7 @@
 <PageTitle>Goals</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Goals</h1>
+    <h1 class="mb-0">Goals</h1>
     <div class="d-flex gap-2">
         <button class="btn btn-outline-secondary" @onclick="OpenAccountModal">+ New Account</button>
         <button class="btn btn-primary" @onclick="ToggleAddForm">
@@ -35,7 +35,7 @@
                 <EditForm Model="scheduleDto" OnValidSubmit="SaveSchedule">
                     <DataAnnotationsValidator />
                     <div class="modal-body">
-                        <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
+                        <div class="alert alert-info py-2 mb-3 small">
                             Remaining to save: <strong>@remaining.ToString("C")</strong>
                             @if (scheduleGoal.SavedAmount > 0)
                             {
@@ -84,7 +84,7 @@
 
                         @if (scheduleMonths > 0)
                         {
-                            <div class="alert @(preview >= remaining ? "alert-success" : "alert-warning") py-2" style="font-size:.875rem">
+                            <div class="alert @(preview >= remaining ? "alert-success" : "alert-warning") py-2 small">
                                 This will create <strong>@scheduleMonths monthly contribution@(scheduleMonths == 1 ? "" : "s")</strong>
                                 of <strong>@scheduleDto.MonthlyAmount.ToString("C")</strong>
                                 from <strong>@(new DateOnly(scheduleDto.StartYear, scheduleDto.StartMonth, 1).ToString("MMM yyyy"))</strong>
@@ -165,7 +165,7 @@
                                 <label class="form-label fw-semibold">
                                     Opening Balance <span class="fw-normal text-muted">(optional)</span>
                                 </label>
-                                <div class="input-group" style="max-width:200px">
+                                <div class="input-group opening-balance-input">
                                     <span class="input-group-text">$</span>
                                     <InputNumber @bind-Value="newAccount.OpeningBalance" class="form-control" step="0.01" />
                                 </div>
@@ -250,7 +250,7 @@
                 <ValidationSummary class="text-danger mt-2" />
                 @if (formError is not null)
                 {
-                    <div class="text-danger mt-2 small">@formError</div>
+                    <div class="alert alert-danger mt-3">@formError</div>
                 }
                 <div class="mt-3">
                     <button type="submit" class="btn btn-primary btn-sm">Save Goal</button>
@@ -379,7 +379,7 @@ else
                     </div>
                 </div>
 
-                <div class="progress" style="height: 20px;">
+                <div class="progress progress-lg">
                     <div class="progress-bar @progressClass"
                          role="progressbar"
                          style="width: @pct%"

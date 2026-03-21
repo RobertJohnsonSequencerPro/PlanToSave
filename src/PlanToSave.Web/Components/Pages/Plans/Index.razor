@@ -7,7 +7,7 @@
 <PageTitle>Monthly Plans</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Monthly Plans</h1>
+    <h1 class="mb-0">Monthly Plans</h1>
     <button class="btn btn-primary" @onclick="OpenCurrentMonth">
         + Open @currentMonthLabel
     </button>
@@ -30,8 +30,8 @@ else
 {
     <div class="table-responsive">
         <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
+            <thead>
+                <tr class="small text-uppercase text-muted">
                     <th>Month</th>
                     <th>Status</th>
                     <th class="text-end">Planned</th>

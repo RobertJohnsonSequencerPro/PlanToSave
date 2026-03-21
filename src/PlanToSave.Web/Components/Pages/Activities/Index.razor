@@ -5,9 +5,9 @@
 
 <PageTitle>Upcoming Plans — PlanToSave</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-1">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 mb-0">
+        <h1 class="mb-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="me-2 text-primary align-text-bottom" viewBox="0 0 16 16">
                 <path d="M10.854 8.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H2zm0 3.5v9h12V5H2z"/>
@@ -52,7 +52,7 @@ else
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <div>
                                 <h5 class="card-title mb-0 fs-6 fw-semibold">@plan.IdeaTitle</h5>
-                                <span class="badge @GetCategoryBadge(plan.IdeaCategory) mt-1">@plan.IdeaCategory.ToString().ToLower()</span>
+                                <span class="badge @GetCategoryBadge(plan.IdeaCategory) mt-1">@plan.IdeaCategory</span>
                             </div>
                             <button class="btn btn-sm btn-link text-danger p-0 ms-1" @onclick="() => DeletePlan(plan.Id)" title="Remove plan" aria-label="Remove plan">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
@@ -81,7 +81,7 @@ else
                             <span>Progress</span>
                             <span>@plan.CompletedSteps/@plan.TotalSteps steps</span>
                         </div>
-                        <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress mb-3 progress-sm">
                             <div class="progress-bar @progressClass" style="width: @pct%"
                                  role="progressbar" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>

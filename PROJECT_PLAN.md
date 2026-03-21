@@ -415,81 +415,82 @@ Violations of the UI Style Guide found across the codebase. All items below must
 
 ### 🔴 Page Layout
 
-- [ ] `Goals/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class, keep `mb-0` only
-- [ ] `Ideas/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class; also change outer wrapper from `mb-1` to `mb-4`
-- [ ] `Plans/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class
-- [ ] `Plans/Detail.razor` — `<h1 class="h3 mb-0 mt-1">` → remove `.h3` and `mt-1`; header wrapper should be `mb-4`
-- [ ] `Templates/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class
-- [ ] `Activities/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3`; outer wrapper `mb-1` → `mb-4`
-- [ ] `Activities/Detail.razor` — `<h1 class="h3 mb-1">` → remove `.h3`, change `mb-1` to `mb-0`; wrapper must be `mb-4`
-- [ ] `Flows/Index.razor` — outer header wrapper `mb-3` → `mb-4`
-- [ ] `Calendar/Index.razor` — outer header wrapper `mb-3` → `mb-4`
+- [x] `Goals/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class, keep `mb-0` only
+- [x] `Ideas/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class; also change outer wrapper from `mb-1` to `mb-4`
+- [x] `Plans/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class
+- [x] `Plans/Detail.razor` — `<h1 class="h3 mb-0 mt-1">` → remove `.h3` and `mt-1`; header wrapper should be `mb-4`
+- [x] `Templates/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3` class
+- [x] `Activities/Index.razor` — `<h1 class="h3 mb-0">` → remove `.h3`; outer wrapper `mb-1` → `mb-4`
+- [x] `Activities/Detail.razor` — `<h1 class="h3 mb-1">` → remove `.h3`, change `mb-1` to `mb-0`; wrapper must be `mb-4`
+- [x] `Flows/Index.razor` — outer header wrapper `mb-3` → `mb-4`
+- [x] `Calendar/Index.razor` — outer header wrapper `mb-3` → `mb-4`
 
 ### 🔴 Action Buttons
 
-- [ ] `Flows/Index.razor` — remove `⬆` emoji from "Import CSV" button label
-- [ ] `Ideas/Index.razor` — remove `💡` emoji from button label; remove `btn-sm` from page-header button (should be full size)
+- [x] `Flows/Index.razor` — remove `⬆` emoji from "Import CSV" button label
+- [x] `Ideas/Index.razor` — remove `💡` emoji from button label; remove `btn-sm` from page-header button (should be full size)
 
 ### 🔴 Inline Forms — Error Display
 
-- [ ] `Goals/Index.razor` — `<div class="text-danger mt-2 small">@formError</div>` → `<div class="alert alert-danger mt-3">@formError</div>`
-- [ ] `Ideas/Index.razor` — same pattern, same fix
-- [ ] `Plans/Detail.razor` — same pattern, same fix
-- [ ] `Templates/Index.razor` — same pattern, same fix
+- [x] `Goals/Index.razor` — `<div class="text-danger mt-2 small">@formError</div>` → `<div class="alert alert-danger mt-3">@formError</div>`
+- [x] `Ideas/Index.razor` — same pattern, same fix
+- [x] `Plans/Detail.razor` — same pattern, same fix
+- [x] `Templates/Index.razor` — same pattern, same fix
 
 ### 🔴 Action Buttons in Headers (size)
 
-- [ ] `Plans/Detail.razor` — "Add Flow" button in page header uses `btn-sm`; remove `btn-sm`
-- [ ] `Calendar/Index.razor` — "+ Add event" button uses `btn-outline-primary btn-sm`; remove `btn-sm`
+- [x] `Plans/Detail.razor` — "Add Flow" button in page header uses `btn-sm`; remove `btn-sm`
+- [ ] `Calendar/Index.razor` — "+ Add event" button uses `btn-outline-primary btn-sm`; remove `btn-sm` *(skipped — button is inside a card header, not the page header; btn-sm is appropriate in this context)*
 
 ### 🔴 Tables — Header Row Classes
 
-- [ ] `Accounts/Index.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
-- [ ] `Flows/Index.razor` — `<thead>` with no class → add `<tr class="small text-uppercase text-muted">`; also add `align-middle` to table classes
-- [ ] `Ideas/Index.razor` — `<thead>` with no class → add `<tr class="small text-uppercase text-muted">`
-- [ ] `Plans/Index.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
-- [ ] `Plans/Detail.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
-- [ ] `Templates/Index.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
-- [ ] `Accounts/Index.razor` — `<table class="table table-hover mb-0">` → add `align-middle`
+- [x] `Accounts/Index.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
+- [x] `Flows/Index.razor` — `<thead>` with no class → add `<tr class="small text-uppercase text-muted">`; also add `align-middle` to table classes
+- [x] `Ideas/Index.razor` — `<thead>` with no class → add `<tr class="small text-uppercase text-muted">`
+- [x] `Plans/Index.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
+- [x] `Plans/Detail.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
+- [x] `Templates/Index.razor` — `<thead class="table-light">` → `<tr class="small text-uppercase text-muted">`
+- [x] `Accounts/Index.razor` — `<table class="table table-hover mb-0">` → add `align-middle`
 
 ### 🔴 Tables — Delete Buttons
 
-- [ ] `Flows/Index.razor` — `btn-outline-danger` → `btn-danger`
-- [ ] `Plans/Detail.razor` — `btn-outline-danger` → `btn-danger`
-- [ ] `Templates/Index.razor` — `btn-outline-danger` → `btn-danger`
+- [x] `Flows/Index.razor` — `btn-outline-danger` → `btn-danger`
+- [x] `Plans/Detail.razor` — `btn-outline-danger` → `btn-danger`
+- [x] `Templates/Index.razor` — `btn-outline-danger` → `btn-danger`
 
 ### 🟡 Tables — Badge Text Casing
 
-- [ ] `Ideas/Index.razor` — Category, EnergyLevel, CostEstimate, Status all call `.ToLower()` on badge text → remove, display enum value as-is
-- [ ] `Activities/Index.razor` — `@plan.IdeaCategory.ToString().ToLower()` → remove `.ToLower()`
-- [ ] `Activities/Detail.razor` — `@plan.IdeaCategory.ToString().ToLower()` → remove `.ToLower()`
+- [x] `Ideas/Index.razor` — Category, EnergyLevel, CostEstimate, Status all call `.ToLower()` on badge text → remove, display enum value as-is
+- [x] `Activities/Index.razor` — `@plan.IdeaCategory.ToString().ToLower()` → remove `.ToLower()`
+- [x] `Activities/Detail.razor` — `@plan.IdeaCategory.ToString().ToLower()` → remove `.ToLower()`
 
 ### 🔴 Empty States
 
-- [ ] `Accounts/Index.razor` — `<div class="alert alert-info">` used as empty state → replace with `<div class="card text-center py-5"><div class="card-body text-muted">` pattern
-- [ ] `Flows/Index.razor` — same `alert alert-info` empty state → replace with card pattern
+- [x] `Accounts/Index.razor` — `<div class="alert alert-info">` used as empty state → replace with `<div class="card text-center py-5"><div class="card-body text-muted">` pattern
+- [x] `Flows/Index.razor` — same `alert alert-info` empty state → replace with card pattern
 
 ### 🔴 Progress Bars — Inline Styles
 
-- [ ] `Goals/Index.razor` (×2) — `style="height:10px;"` → class `progress-md`
-- [ ] `Home.razor` — `style="height:10px;"` → class `progress-md`
-- [ ] `Activities/Index.razor` — `style="height: 6px;"` → class `progress-sm`
-- [ ] `Activities/Detail.razor` — `style="height: 10px;"` → class `progress-md`
-- [ ] `Pipeline.razor` — `style="height:3px"` → class `progress-xs`
+- [x] `Goals/Index.razor` — `style="height:20px;"` → class `progress-lg`
+- [x] `Home.razor` — `style="height:10px;"` → class `progress-md`
+- [x] `Activities/Index.razor` — `style="height: 6px;"` → class `progress-sm`
+- [x] `Activities/Detail.razor` — `style="height: 10px;"` → class `progress-md`
+- [x] `Pipeline.razor` — `style="height:3px"` → class `progress-xs`
+- [x] `Pipeline.razor` — `style="height:8px"` → class `progress-sm`
 
 ### 🟡 Inline Styles (Anti-pattern)
 
-- [ ] `Goals/Index.razor` — `style="font-size:.875rem"` → add CSS utility class or use Bootstrap `small`
-- [ ] `Goals/Index.razor` (×2) — `style="max-width:200px"` on input-group → move to scoped `.razor.css`
-- [ ] `Ideas/Index.razor` — `style="letter-spacing:.05em"` → move to scoped `.razor.css`
-- [ ] `Ideas/Index.razor` — `style="font-size:.88rem"` on steps list → use Bootstrap `small` or scoped CSS
-- [ ] `Activities/Detail.razor` — `style="width:90px"` on budget input → move to scoped `.razor.css`
-- [ ] `Activities/Detail.razor` — `style="width:130px"` on select → move to scoped `.razor.css`
-- [ ] `Accounts/Index.razor` — `style="width:160px"` on date input → move to scoped `.razor.css`
-- [ ] `Accounts/Index.razor` — `style="width:140px"` on number input → move to scoped `.razor.css`
-- [ ] `Home.razor` — `style="font-size:0.65rem;color:#5a6472;"` → use Bootstrap `small` + `text-muted`; remove inline hex color
-- [ ] `Pipeline.razor` — `style="font-size:.9rem"` on tagline → use Bootstrap `small` or scoped CSS
+- [x] `Goals/Index.razor` — `style="font-size:.875rem"` → added Bootstrap `small` class
+- [x] `Goals/Index.razor` — `style="max-width:200px"` on input-group → moved to `Goals/Index.razor.css`
+- [x] `Ideas/Index.razor` — `style="letter-spacing:.05em"` → removed (text-uppercase already handles spacing)
+- [x] `Ideas/Index.razor` — `style="font-size:.88rem"` on steps list → replaced with Bootstrap `small` class
+- [x] `Activities/Detail.razor` — `style="width:90px"` on budget input → moved to `Activities/Detail.razor.css`
+- [x] `Activities/Detail.razor` — `style="width:130px"` on select → moved to `Activities/Detail.razor.css`
+- [x] `Accounts/Index.razor` — `style="width:160px"` on date input → moved to `Accounts/Index.razor.css`
+- [x] `Accounts/Index.razor` — `style="width:140px"` on number input → moved to `Accounts/Index.razor.css`
+- [x] `Home.razor` — `style="font-size:0.65rem;color:#5a6472;"` → replaced with Bootstrap `small text-muted`
+- [x] `Pipeline.razor` — `style="font-size:.9rem"` on tagline → replaced with Bootstrap `small` class
 
 ### 🟡 Delete Confirmation Message
 
-- [ ] `Flows/Index.razor` — confirm message `"Delete this flow: \"{label}\"?"` → update to `"Delete \"{label}\"? This cannot be undone."`
+- [x] `Flows/Index.razor` — confirm message `"Delete this flow: \"{label}\"?"` → updated to `"Delete \"{label}\"? This cannot be undone."`
