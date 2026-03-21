@@ -59,6 +59,23 @@
                     <ValidationMessage For="() => model.Description" class="text-danger small" />
                 </div>
 
+                @if (model.Type is AccountType.Checking or AccountType.Savings
+                               or AccountType.Credit or AccountType.Investment
+                     || (Id is not null && existingType is not "Income" and not "Expense"))
+                {
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            Opening Balance
+                            <span class="fw-normal text-muted">(optional — the balance already in this account before tracking starts)</span>
+                        </label>
+                        <div class="input-group" style="max-width:220px">
+                            <span class="input-group-text">$</span>
+                            <InputNumber @bind-Value="model.OpeningBalance" class="form-control" step="0.01" />
+                        </div>
+                        <ValidationMessage For="() => model.OpeningBalance" class="text-danger small" />
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
                     <div class="alert alert-danger">@errorMessage</div>
@@ -113,7 +130,8 @@
             {
                 Name = account.Name,
                 Type = account.Type,
-                Description = account.Description
+                Description = account.Description,
+                OpeningBalance = account.OpeningBalance
             };
         }
         else
@@ -136,7 +154,8 @@
                 {
                     Name = model.Name,
                     Type = model.Type,
-                    Description = model.Description
+                    Description = model.Description,
+                    OpeningBalance = model.OpeningBalance
                 });
             }
             else
@@ -144,7 +163,8 @@
                 await AccountService.UpdateAsync(Id.Value, userId, new UpdateAccountDto
                 {
                     Name = model.Name,
-                    Description = model.Description
+                    Description = model.Description,
+                    OpeningBalance = model.OpeningBalance
                 });
             }
             Nav.NavigateTo("/accounts");
@@ -177,5 +197,8 @@
 
         [MaxLength(500, ErrorMessage = "Description must be 500 characters or less")]
         public string? Description { get; set; }
+
+        [Range(-10_000_000, 10_000_000, ErrorMessage = "Opening balance must be a reasonable amount")]
+        public decimal OpeningBalance { get; set; }
     }
 }

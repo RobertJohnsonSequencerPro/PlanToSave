@@ -9,6 +9,7 @@ public class Account
     public string Name { get; set; } = null!;
     public AccountType Type { get; set; }
     public string? Description { get; set; }
+    public decimal OpeningBalance { get; set; }
     public bool IsArchived { get; set; }
     public DateTime CreatedAt { get; set; }
 

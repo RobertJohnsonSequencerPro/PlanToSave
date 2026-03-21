@@ -38,6 +38,7 @@ public class AccountService(ApplicationDbContext db) : IAccountService
             Name = dto.Name.Trim(),
             Type = dto.Type,
             Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
+            OpeningBalance = dto.OpeningBalance,
             IsArchived = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -54,6 +55,7 @@ public class AccountService(ApplicationDbContext db) : IAccountService
 
         account.Name = dto.Name.Trim();
         account.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+        account.OpeningBalance = dto.OpeningBalance;
         await db.SaveChangesAsync();
     }
 
@@ -98,10 +100,10 @@ public class AccountService(ApplicationDbContext db) : IAccountService
             a.Id,
             a.Name,
             a.Type,
-            inflows.GetValueOrDefault(a.Id) - outflows.GetValueOrDefault(a.Id)
+            a.OpeningBalance + inflows.GetValueOrDefault(a.Id) - outflows.GetValueOrDefault(a.Id)
         )).ToList();
     }
 
     private static AccountDto ToDto(Account a) =>
-        new(a.Id, a.Name, a.Type, a.Description, a.IsArchived, a.IsStockAccount);
+        new(a.Id, a.Name, a.Type, a.Description, a.OpeningBalance, a.IsArchived, a.IsStockAccount);
 }

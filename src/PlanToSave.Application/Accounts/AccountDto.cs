@@ -8,6 +8,7 @@ public record AccountDto(
     string Name,
     AccountType Type,
     string? Description,
+    decimal OpeningBalance,
     bool IsArchived,
     bool IsStockAccount);
 
@@ -27,6 +28,9 @@ public class CreateAccountDto
 
     [MaxLength(500, ErrorMessage = "Description must be 500 characters or less")]
     public string? Description { get; set; }
+
+    [Range(-10_000_000, 10_000_000, ErrorMessage = "Opening balance must be a reasonable amount")]
+    public decimal OpeningBalance { get; set; }
 }
 
 public class UpdateAccountDto
@@ -37,4 +41,7 @@ public class UpdateAccountDto
 
     [MaxLength(500, ErrorMessage = "Description must be 500 characters or less")]
     public string? Description { get; set; }
+
+    [Range(-10_000_000, 10_000_000, ErrorMessage = "Opening balance must be a reasonable amount")]
+    public decimal OpeningBalance { get; set; }
 }
