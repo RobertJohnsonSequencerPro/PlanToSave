@@ -9,3 +9,12 @@ window.downloadFile = function (filename, contentType, content) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 };
+
+window.appGetTheme = function () {
+    return localStorage.getItem('pts-theme') || 'light';
+};
+
+window.appSetTheme = function (theme) {
+    localStorage.setItem('pts-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+};
