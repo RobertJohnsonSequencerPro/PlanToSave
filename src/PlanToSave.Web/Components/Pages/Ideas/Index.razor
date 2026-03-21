@@ -35,9 +35,12 @@
                     <h6 class="fw-semibold mb-0">💡 Inspiration — what could you plan for?</h6>
                     <p class="text-muted small mb-0">Click any idea below to pre-fill the form. Life is richer when you plan for both the fun <em>and</em> the practical.</p>
                 </div>
-                <button type="button" class="btn-close" @onclick="ToggleSuggestions" aria-label="Close"></button>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="ShuffleSuggestions" title="Show a different set of ideas">🔀 Shuffle</button>
+                    <button type="button" class="btn-close" @onclick="ToggleSuggestions" aria-label="Close"></button>
+                </div>
             </div>
-            @foreach (var group in IdeaSuggestions)
+            @foreach (var group in _visibleSuggestions)
             {
                 <div class="mb-3">
                     <div class="text-muted small fw-semibold text-uppercase mb-1" style="letter-spacing:.05em">@group.Label</div>
@@ -307,6 +310,7 @@ else
     private string userId = "";
     private bool showAddForm = false;
     private bool showSuggestions = false;
+    private IdeaGroup[] _visibleSuggestions = [];
     private SaveIdeaDto newIdea = new();
     private string? formError;
 
@@ -321,6 +325,7 @@ else
     {
         var auth = await AuthState.GetAuthenticationStateAsync();
         userId = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+        _visibleSuggestions = SampleSuggestions();
         await LoadIdeas();
     }
 
@@ -361,7 +366,13 @@ else
         }
     }
 
-    private void ToggleSuggestions() => showSuggestions = !showSuggestions;
+    private void ToggleSuggestions()
+    {
+        showSuggestions = !showSuggestions;
+        if (showSuggestions) _visibleSuggestions = SampleSuggestions();
+    }
+
+    private void ShuffleSuggestions() => _visibleSuggestions = SampleSuggestions();
 
     private void OpenSuggestions()
     {
@@ -383,7 +394,14 @@ else
 
     private record IdeaGroup(string Label, string BtnClass, IdeaPrompt[] Items);
 
-    private static readonly IdeaGroup[] IdeaSuggestions =
+    private const int InspirationItemsPerGroup = 5;
+
+    private IdeaGroup[] SampleSuggestions() =>
+        AllIdeaSuggestions
+            .Select(g => g with { Items = g.Items.OrderBy(_ => Random.Shared.Next()).Take(InspirationItemsPerGroup).ToArray() })
+            .ToArray();
+
+    private static readonly IdeaGroup[] AllIdeaSuggestions =
     [
         new("🎉 Fun & Entertainment", "btn-outline-primary",
         [
@@ -391,6 +409,22 @@ else
             new("Host a backyard game night", IdeaCategory.Entertainment),
             new("Visit an escape room", IdeaCategory.Entertainment),
             new("Go to a local festival", IdeaCategory.Entertainment),
+            new("See a stand-up comedy show", IdeaCategory.Entertainment),
+            new("Visit an art museum or gallery", IdeaCategory.Entertainment),
+            new("Attend a live sporting event", IdeaCategory.Entertainment),
+            new("Go to a drive-in movie", IdeaCategory.Entertainment),
+            new("Host a movie marathon night", IdeaCategory.Entertainment),
+            new("Try axe throwing", IdeaCategory.Entertainment),
+            new("See an improv comedy show", IdeaCategory.Entertainment),
+            new("Visit a rooftop bar or venue", IdeaCategory.Entertainment),
+            new("Attend a Renaissance faire", IdeaCategory.Entertainment),
+            new("Take a sunset sail or boat tour", IdeaCategory.Entertainment),
+            new("Visit a science museum", IdeaCategory.Entertainment),
+            new("Host a trivia night", IdeaCategory.Entertainment),
+            new("Go to a comedy festival", IdeaCategory.Entertainment),
+            new("See a magic show", IdeaCategory.Entertainment),
+            new("Attend an outdoor Shakespeare performance", IdeaCategory.Entertainment),
+            new("Visit a professional sports hall of fame", IdeaCategory.Entertainment),
         ]),
         new("✈️ Travel & Adventure", "btn-outline-info",
         [
@@ -400,6 +434,20 @@ else
             new("Explore a city you've never been to", IdeaCategory.Travel),
             new("Go kayaking or canoeing", IdeaCategory.Travel),
             new("Weekend camping trip", IdeaCategory.Travel),
+            new("Take a train trip across the country", IdeaCategory.Travel),
+            new("Book a beach vacation", IdeaCategory.Travel),
+            new("Explore a new hiking trail", IdeaCategory.Travel),
+            new("Plan a ski or snowboard trip", IdeaCategory.Travel),
+            new("Book a cabin in the woods", IdeaCategory.Travel),
+            new("Take a cruise", IdeaCategory.Travel),
+            new("Explore a nearby small town", IdeaCategory.Travel),
+            new("Go whale watching", IdeaCategory.Travel),
+            new("Visit a vineyard region", IdeaCategory.Travel),
+            new("Road trip to a state you've never visited", IdeaCategory.Travel),
+            new("Go stargazing at a dark sky park", IdeaCategory.Travel),
+            new("Visit a botanical garden", IdeaCategory.Travel),
+            new("Take a hot air balloon ride", IdeaCategory.Travel),
+            new("Plan a backpacking trip", IdeaCategory.Travel),
         ]),
         new("🍽️ Dining & Social", "btn-outline-warning",
         [
@@ -407,6 +455,22 @@ else
             new("Take a cooking class", IdeaCategory.Dining),
             new("Host a dinner party", IdeaCategory.Social),
             new("Go wine or craft beer tasting", IdeaCategory.Dining),
+            new("Try a sushi-making class", IdeaCategory.Dining),
+            new("Visit a new bakery or café", IdeaCategory.Dining),
+            new("Host a game night with friends", IdeaCategory.Social),
+            new("Plan a picnic in the park", IdeaCategory.Social),
+            new("Try a cuisine you've never had before", IdeaCategory.Dining),
+            new("Attend a food truck festival", IdeaCategory.Dining),
+            new("Host a neighborhood barbecue", IdeaCategory.Social),
+            new("Take a cocktail-making class", IdeaCategory.Dining),
+            new("Do a coffee shop crawl", IdeaCategory.Dining),
+            new("Plan a progressive dinner with friends", IdeaCategory.Social),
+            new("Visit a night market", IdeaCategory.Dining),
+            new("Organize a potluck dinner", IdeaCategory.Social),
+            new("Try a tasting menu at a nice restaurant", IdeaCategory.Dining),
+            new("Host a Sunday brunch", IdeaCategory.Social),
+            new("Do a hot pot night with friends", IdeaCategory.Dining),
+            new("Visit a farm-to-table restaurant", IdeaCategory.Dining),
         ]),
         new("🔧 Practical & Responsible", "btn-outline-secondary",
         [
@@ -416,6 +480,20 @@ else
             new("Get a home deep clean or declutter", IdeaCategory.Other),
             new("Set up or update a will", IdeaCategory.Other),
             new("Schedule overdue car maintenance", IdeaCategory.Other),
+            new("Review and update your insurance coverage", IdeaCategory.Other),
+            new("Create or update a household budget", IdeaCategory.Other),
+            new("Organize important documents", IdeaCategory.Other),
+            new("Set up automatic retirement contributions", IdeaCategory.Other),
+            new("Get a home energy audit", IdeaCategory.Other),
+            new("Install a home security system", IdeaCategory.Other),
+            new("Fix that thing you've been putting off", IdeaCategory.Other),
+            new("Review your credit report", IdeaCategory.Other),
+            new("Set up a college savings account", IdeaCategory.Other),
+            new("Get a life insurance policy", IdeaCategory.Other),
+            new("Repaint a room that needs refreshing", IdeaCategory.Other),
+            new("Landscape or improve the yard", IdeaCategory.Other),
+            new("Upgrade your home office setup", IdeaCategory.Other),
+            new("Donate or sell things you no longer need", IdeaCategory.Other),
         ]),
         new("🌱 Wellness & Health", "btn-outline-success",
         [
@@ -424,6 +502,21 @@ else
             new("Get a dental checkup", IdeaCategory.Wellness),
             new("Start a meditation or mindfulness habit", IdeaCategory.Wellness),
             new("Buy a quality bike for commuting", IdeaCategory.Wellness),
+            new("Train for a 5K", IdeaCategory.Wellness),
+            new("Try yoga or pilates", IdeaCategory.Wellness),
+            new("Book a massage or spa day", IdeaCategory.Wellness),
+            new("Start a daily walking habit", IdeaCategory.Wellness),
+            new("Get a nutrition coaching session", IdeaCategory.Wellness),
+            new("Get a vision checkup", IdeaCategory.Wellness),
+            new("Try a sauna or cold plunge", IdeaCategory.Wellness),
+            new("Start a consistent sleep routine", IdeaCategory.Wellness),
+            new("Join a recreational sports league", IdeaCategory.Wellness),
+            new("Do a digital detox weekend", IdeaCategory.Wellness),
+            new("Get an ergonomic home office setup", IdeaCategory.Wellness),
+            new("Join a hiking club", IdeaCategory.Wellness),
+            new("Get a dermatology checkup", IdeaCategory.Wellness),
+            new("Start a gratitude journaling practice", IdeaCategory.Wellness),
+            new("Take a mental health day", IdeaCategory.Wellness),
         ]),
         new("📚 Learning & Growth", "btn-outline-dark",
         [
@@ -431,6 +524,22 @@ else
             new("Learn a new language", IdeaCategory.Learning),
             new("Read 12 books this year", IdeaCategory.Learning),
             new("Pick up a musical instrument", IdeaCategory.Learning),
+            new("Learn to code or build an app", IdeaCategory.Learning),
+            new("Start a creative side project", IdeaCategory.Learning),
+            new("Take a photography class", IdeaCategory.Learning),
+            new("Learn woodworking or a craft", IdeaCategory.Learning),
+            new("Join a book club", IdeaCategory.Learning),
+            new("Attend a professional conference", IdeaCategory.Learning),
+            new("Get a professional certification", IdeaCategory.Learning),
+            new("Learn to draw or paint", IdeaCategory.Learning),
+            new("Start a podcast or blog", IdeaCategory.Learning),
+            new("Take a public speaking course", IdeaCategory.Learning),
+            new("Learn to play chess", IdeaCategory.Learning),
+            new("Study a topic you've always been curious about", IdeaCategory.Learning),
+            new("Take an improv or acting class", IdeaCategory.Learning),
+            new("Read a biography of someone you admire", IdeaCategory.Learning),
+            new("Learn calligraphy or hand lettering", IdeaCategory.Learning),
+            new("Build something with your hands", IdeaCategory.Learning),
         ]),
     ];
 
