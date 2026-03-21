@@ -184,6 +184,13 @@ h1:focus {
     border-bottom-color: #3a4258;
 }
 [data-theme="dark"] .table th { color: #dde4ec; }
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .table-light > th,
+[data-theme="dark"] .table-light > td {
+    background-color: #252c3d !important;
+    color: #dde4ec !important;
+    border-color: #3a4258 !important;
+}
 
 /* ── Form controls ───────────────────────────────────────── */
 [data-theme="dark"] .form-control,
