@@ -24,6 +24,7 @@ public record AccountBalanceDto(
 public record BalanceSnapshotDto(
     Guid Id,
     decimal Amount,
+    decimal Variance,
     DateOnly EffectiveDate,
     string? Note,
     DateTime CreatedAt);

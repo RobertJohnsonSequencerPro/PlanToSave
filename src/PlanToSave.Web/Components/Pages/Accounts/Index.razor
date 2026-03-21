@@ -85,15 +85,30 @@ else
                                         {
                                             <div class="text-danger small mt-1">@reconcileError</div>
                                         }
+                                        @if (reconcileVariance is not null)
+                                        {
+                                            var v = reconcileVariance.Value;
+                                            var vClass = v == 0 ? "text-success" : (v > 0 ? "text-success" : "text-danger");
+                                            var vSign  = v >= 0 ? "+" : "";
+                                            var vLabel = v == 0
+                                                ? "Perfect match — no discrepancy."
+                                                : (v > 0
+                                                    ? $"Bank balance is {v.ToString("C")} higher than the tracked running total."
+                                                    : $"Bank balance is {Math.Abs(v).ToString("C")} lower than the tracked running total.");
+                                            <div class="@vClass small mt-2 fw-semibold">Variance: @(vSign)@v.ToString("C") — @vLabel</div>
+                                        }
                                         @if (snapshots.Count > 0)
                                         {
                                             <div class="mt-2">
                                                 <span class="text-muted small fw-semibold">Past reconciliations:</span>
                                                 @foreach (var s in snapshots.Take(3))
                                                 {
+                                                    var badgeVarianceClass = s.Variance == 0 ? "text-success" : (s.Variance > 0 ? "text-success" : "text-danger");
+                                                    var badgeVarianceSign  = s.Variance >= 0 ? "+" : "";
                                                     <span class="badge bg-light text-dark border ms-1">
                                                         @s.EffectiveDate.ToString("MMM d, yyyy") → @s.Amount.ToString("C")
-                                                        @if (s.Note is not null) { <text> (@s.Note)</text> }
+                                                        <span class="@badgeVarianceClass ms-1">(@(badgeVarianceSign)@s.Variance.ToString("C"))</span>
+                                                        @if (s.Note is not null) { <text> @s.Note</text> }
                                                     </span>
                                                 }
                                             </div>
@@ -213,6 +228,7 @@ else
     private decimal reconcileAmount;
     private string? reconcileNote;
     private string? reconcileError;
+    private decimal? reconcileVariance;
     private List<BalanceSnapshotDto> snapshots = [];
 
     protected override async Task OnInitializedAsync()
@@ -236,6 +252,7 @@ else
             reconcileAccountId = null;
             snapshots = [];
             reconcileError = null;
+            reconcileVariance = null;
             return;
         }
         reconcileAccountId = accountId;
@@ -243,16 +260,19 @@ else
         reconcileAmount = 0;
         reconcileNote = null;
         reconcileError = null;
+        reconcileVariance = null;
         snapshots = await AccountService.GetSnapshotsAsync(userId, accountId);
     }
 
     private async Task SaveReconcile(Guid accountId)
     {
         reconcileError = null;
+        reconcileVariance = null;
         try
         {
             await AccountService.SetSnapshotAsync(userId, accountId, reconcileAmount, reconcileDate, reconcileNote);
             snapshots = await AccountService.GetSnapshotsAsync(userId, accountId);
+            reconcileVariance = snapshots.FirstOrDefault(s => s.EffectiveDate == reconcileDate)?.Variance;
             reconcileNote = null;
         }
         catch (Exception ex)

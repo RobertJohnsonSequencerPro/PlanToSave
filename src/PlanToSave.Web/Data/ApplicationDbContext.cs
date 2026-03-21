@@ -125,6 +125,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasKey(s => s.Id);
             e.Property(s => s.Amount).HasPrecision(18, 2);
+            e.Property(s => s.Variance).HasPrecision(18, 2);
             e.Property(s => s.Note).HasMaxLength(300);
             e.HasIndex(s => new { s.UserId, s.AccountId });
             e.HasOne(s => s.Account).WithMany().HasForeignKey(s => s.AccountId)

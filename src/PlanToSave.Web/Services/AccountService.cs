@@ -147,6 +147,34 @@ public class AccountService(ApplicationDbContext db) : IAccountService
             .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId)
             ?? throw new InvalidOperationException("Account not found.");
 
+        // Compute variance: bank-stated amount vs. the system's running total at effectiveDate
+        // Baseline = most recent snapshot strictly BEFORE effectiveDate (or OpeningBalance if none)
+        var prevSnap = await db.BalanceSnapshots
+            .Where(s => s.AccountId == accountId && s.UserId == userId && s.EffectiveDate < effectiveDate)
+            .OrderByDescending(s => s.EffectiveDate)
+            .Select(s => new { s.Amount, s.EffectiveDate })
+            .FirstOrDefaultAsync();
+
+        var prevBase   = prevSnap?.Amount ?? account.OpeningBalance;
+        var prevCutoff = prevSnap?.EffectiveDate;
+
+        // Flows for this account between the previous cutoff and effectiveDate (inclusive)
+        var flowsQuery = db.ActualFlows
+            .Where(f => f.UserId == userId &&
+                        (f.ToAccountId == accountId || f.FromAccountId == accountId) &&
+                        f.Date <= effectiveDate);
+        if (prevCutoff.HasValue)
+            flowsQuery = flowsQuery.Where(f => f.Date > prevCutoff.Value);
+
+        var flows = await flowsQuery
+            .Select(f => new { f.FromAccountId, f.ToAccountId, f.Amount })
+            .ToListAsync();
+
+        var inflows  = flows.Where(f => f.ToAccountId   == accountId).Sum(f => f.Amount);
+        var outflows = flows.Where(f => f.FromAccountId == accountId).Sum(f => f.Amount);
+        var computedBalance = prevBase + inflows - outflows;
+        var variance = amount - computedBalance;
+
         // Replace any existing snapshot on the exact same date (idempotent reconcile)
         var existing = await db.BalanceSnapshots
             .FirstOrDefaultAsync(s => s.AccountId == accountId
@@ -154,20 +182,22 @@ public class AccountService(ApplicationDbContext db) : IAccountService
                                    && s.EffectiveDate == effectiveDate);
         if (existing is not null)
         {
-            existing.Amount = amount;
-            existing.Note = note;
+            existing.Amount   = amount;
+            existing.Variance = variance;
+            existing.Note     = note;
         }
         else
         {
             db.BalanceSnapshots.Add(new Domain.Entities.BalanceSnapshot
             {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                AccountId = accountId,
-                Amount = amount,
+                Id            = Guid.NewGuid(),
+                UserId        = userId,
+                AccountId     = accountId,
+                Amount        = amount,
+                Variance      = variance,
                 EffectiveDate = effectiveDate,
-                Note = note,
-                CreatedAt = DateTime.UtcNow
+                Note          = note,
+                CreatedAt     = DateTime.UtcNow
             });
         }
         await db.SaveChangesAsync();
@@ -178,7 +208,7 @@ public class AccountService(ApplicationDbContext db) : IAccountService
         return await db.BalanceSnapshots
             .Where(s => s.UserId == userId && s.AccountId == accountId)
             .OrderByDescending(s => s.EffectiveDate)
-            .Select(s => new BalanceSnapshotDto(s.Id, s.Amount, s.EffectiveDate, s.Note, s.CreatedAt))
+            .Select(s => new BalanceSnapshotDto(s.Id, s.Amount, s.Variance, s.EffectiveDate, s.Note, s.CreatedAt))
             .ToListAsync();
     }
 
