@@ -1,0 +1,230 @@
+@page "/templates"
+@attribute [Authorize]
+@inject IFlowTemplateService TemplateService
+@inject IActualFlowService FlowService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Recurring Templates</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Recurring Templates</h1>
+    <button class="btn btn-primary" @onclick="ToggleAddForm">
+        @(showAddForm ? "Cancel" : "+ New Template")
+    </button>
+</div>
+
+@if (showAddForm)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h6 class="card-subtitle mb-3 text-muted">New Recurring Template</h6>
+            <EditForm Model="newTemplate" OnValidSubmit="CreateTemplate">
+                <DataAnnotationsValidator />
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label">From Account</label>
+                        <InputSelect @bind-Value="newTemplate.FromAccountId" class="form-select">
+                            <option value="@Guid.Empty">— select —</option>
+                            @foreach (var group in fromOptions.GroupBy(a => a.Type))
+                            {
+                                <optgroup label="@group.Key">
+                                    @foreach (var a in group)
+                                    {
+                                        <option value="@a.Id">@a.Name</option>
+                                    }
+                                </optgroup>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">To Account</label>
+                        <InputSelect @bind-Value="newTemplate.ToAccountId" class="form-select">
+                            <option value="@Guid.Empty">— select —</option>
+                            @foreach (var group in toOptions.GroupBy(a => a.Type))
+                            {
+                                <optgroup label="@group.Key">
+                                    @foreach (var a in group)
+                                    {
+                                        <option value="@a.Id">@a.Name</option>
+                                    }
+                                </optgroup>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Amount</label>
+                        <InputNumber @bind-Value="newTemplate.Amount" class="form-control" min="0.01" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Description</label>
+                        <InputText @bind-Value="newTemplate.Description" class="form-control"
+                                   placeholder="e.g. Monthly rent, Gym membership" />
+                    </div>
+                </div>
+                <ValidationSummary class="text-danger mt-2" />
+                @if (formError is not null)
+                {
+                    <div class="text-danger mt-2 small">@formError</div>
+                }
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">Save Template</button>
+                    <button type="button" class="btn btn-link btn-sm" @onclick="ToggleAddForm">Cancel</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (templates is null)
+{
+    <p class="text-muted">Loading...</p>
+}
+else if (templates.Count == 0)
+{
+    <div class="card text-center py-5">
+        <div class="card-body text-muted">
+            <p class="mb-2">No recurring templates yet.</p>
+            <p>Templates let you quickly seed a monthly plan with your regular flows (rent, salary, subscriptions, etc.)</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-3 d-flex gap-2">
+        <button class="btn btn-sm @(filterActive == null ? "btn-secondary" : "btn-outline-secondary")"
+                @onclick="() => SetFilter(null)">All (@templates.Count)</button>
+        <button class="btn btn-sm @(filterActive == true ? "btn-success" : "btn-outline-success")"
+                @onclick="() => SetFilter(true)">Active (@templates.Count(t => t.IsActive))</button>
+        <button class="btn btn-sm @(filterActive == false ? "btn-secondary" : "btn-outline-secondary")"
+                @onclick="() => SetFilter(false)">Inactive (@templates.Count(t => !t.IsActive))</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                    <th class="text-center">Active</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in FilteredTemplates)
+                {
+                    <tr class="@(t.IsActive ? "" : "text-muted")">
+                        <td>
+                            <span class="badge @GetTypeBadgeClass(t.FromAccountType) me-1">@t.FromAccountType</span>
+                            @t.FromAccountName
+                        </td>
+                        <td>
+                            <span class="badge @GetTypeBadgeClass(t.ToAccountType) me-1">@t.ToAccountType</span>
+                            @t.ToAccountName
+                        </td>
+                        <td>@t.Description</td>
+                        <td class="text-end fw-semibold">@t.Amount.ToString("C")</td>
+                        <td class="text-center">
+                            <div class="form-check form-switch d-flex justify-content-center mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       checked="@t.IsActive"
+                                       @onchange="() => ToggleActive(t.Id)" />
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => DeleteTemplate(t.Id, t.Description)">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<FlowTemplateDto>? templates;
+    private List<AccountOptionDto> fromOptions = [];
+    private List<AccountOptionDto> toOptions = [];
+    private string userId = "";
+    private bool showAddForm = false;
+    private CreateFlowTemplateDto newTemplate = new();
+    private string? formError;
+    private bool? filterActive = true;
+
+    private IEnumerable<FlowTemplateDto> FilteredTemplates =>
+        filterActive is null ? templates! : templates!.Where(t => t.IsActive == filterActive);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
+        var templatesTask = TemplateService.GetTemplatesAsync(userId);
+        var fromTask = FlowService.GetFromAccountOptionsAsync(userId);
+        var toTask = FlowService.GetToAccountOptionsAsync(userId);
+        await Task.WhenAll(templatesTask, fromTask, toTask);
+
+        templates = templatesTask.Result;
+        fromOptions = fromTask.Result;
+        toOptions = toTask.Result;
+    }
+
+    private void ToggleAddForm()
+    {
+        showAddForm = !showAddForm;
+        if (showAddForm)
+        {
+            newTemplate = new CreateFlowTemplateDto();
+            formError = null;
+        }
+    }
+
+    private async Task CreateTemplate()
+    {
+        if (newTemplate.FromAccountId == Guid.Empty || newTemplate.ToAccountId == Guid.Empty)
+        {
+            formError = "Please select both From and To accounts.";
+            return;
+        }
+        try
+        {
+            await TemplateService.CreateAsync(userId, newTemplate);
+            templates = await TemplateService.GetTemplatesAsync(userId);
+            showAddForm = false;
+            formError = null;
+        }
+        catch (Exception ex)
+        {
+            formError = ex.Message;
+        }
+    }
+
+    private async Task ToggleActive(Guid id)
+    {
+        await TemplateService.ToggleActiveAsync(userId, id);
+        templates = await TemplateService.GetTemplatesAsync(userId);
+    }
+
+    private async Task DeleteTemplate(Guid id, string description)
+    {
+        await TemplateService.DeleteAsync(userId, id);
+        templates = await TemplateService.GetTemplatesAsync(userId);
+    }
+
+    private void SetFilter(bool? value) => filterActive = value;
+
+    private static string GetTypeBadgeClass(AccountType type) => type switch
+    {
+        AccountType.Income => "bg-success",
+        AccountType.Expense => "bg-danger",
+        AccountType.Savings => "bg-primary",
+        AccountType.Checking => "bg-info text-dark",
+        AccountType.Credit => "bg-warning text-dark",
+        AccountType.Investment => "bg-purple text-white",
+        _ => "bg-secondary"
+    };
+}

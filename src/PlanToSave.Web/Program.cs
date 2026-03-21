@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PlanToSave.Application.Accounts;
 using PlanToSave.Application.Flows;
 using PlanToSave.Application.Plans;
+using PlanToSave.Application.Templates;
 using PlanToSave.Web.Components;
 using PlanToSave.Web.Components.Account;
 using PlanToSave.Web.Data;
@@ -79,6 +80,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IActualFlowService, ActualFlowService>();
 builder.Services.AddScoped<IMonthlyPlanService, MonthlyPlanService>();
+builder.Services.AddScoped<IFlowTemplateService, FlowTemplateService>();
 
 var app = builder.Build();
 
