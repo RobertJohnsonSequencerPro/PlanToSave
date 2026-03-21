@@ -3,6 +3,7 @@
 @inject IAccountService AccountService
 @inject IGoalService GoalService
 @inject IIdeaService IdeaService
+@inject IActivityPlanService ActivityPlanService
 @inject IMonthlyPlanService PlanService
 
 <PageTitle>Dashboard — PlanToSave</PageTitle>
@@ -56,8 +57,82 @@ else
             </div>
         </div>
     </div>
-    <div class="mb-4 text-end">
+    <div class="mb-3 text-end">
         <a href="/ideas" class="text-muted small">Manage ideas →</a>
+    </div>
+
+    @* Coming up + Needs attention *@
+    var today2 = DateOnly.FromDateTime(DateTime.Today);
+    var nextWeek = today2.AddDays(7);
+    var comingUp = upcomingPlans
+        .Where(p => p.PlannedDate.HasValue && p.PlannedDate.Value >= today2 && p.PlannedDate.Value <= nextWeek)
+        .ToList();
+    var overdue = upcomingPlans
+        .Where(p => p.PlannedDate.HasValue && p.PlannedDate.Value < today2)
+        .ToList();
+    <div class="row g-3 mb-4">
+        <div class="col-md-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-semibold small">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        Coming up this week
+                    </span>
+                    <a href="/upcoming" class="btn btn-link btn-sm p-0">See all</a>
+                </div>
+                <div class="card-body py-2">
+                    @if (comingUp.Count == 0)
+                    {
+                        <p class="text-muted small mb-0">Nothing scheduled for the next 7 days.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var p in comingUp)
+                            {
+                                <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <a href="/upcoming/@p.Id" class="text-decoration-none fw-semibold small">@p.IdeaTitle</a>
+                                    <span class="text-muted small">@p.PlannedDate!.Value.ToString("MMM d")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card h-100 @(overdue.Count > 0 ? "border-warning" : "")">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-semibold small @(overdue.Count > 0 ? "text-warning" : "")">
+                        @(overdue.Count > 0 ? "⚠️ Needs review" : "All caught up")
+                    </span>
+                    @if (overdue.Count > 0)
+                    {
+                        <a href="/upcoming" class="btn btn-link btn-sm p-0">Go to plans</a>
+                    }
+                </div>
+                <div class="card-body py-2">
+                    @if (overdue.Count == 0)
+                    {
+                        <p class="text-muted small mb-0">No overdue plans.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var p in overdue)
+                            {
+                                <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <a href="/upcoming/@p.Id" class="text-decoration-none fw-semibold small">@p.IdeaTitle</a>
+                                    <span class="text-danger small">@p.PlannedDate!.Value.ToString("MMM d, yyyy")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
     <hr class="my-4" />
@@ -206,6 +281,7 @@ else
     private List<AccountBalanceDto>? balances;
     private List<GoalDto> activeGoals = [];
     private List<IdeaDto> allIdeas = [];
+    private List<ActivityPlanDto> upcomingPlans = [];
     private MonthlyPlanDetailDto? currentPlan;
 
     private int BacklogCount => allIdeas.Count(i => i.Status == IdeaStatus.Backlog);
@@ -217,10 +293,11 @@ else
         var state = await AuthState;
         var userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
 
-        balances    = await AccountService.GetBalancesAsync(userId);
-        activeGoals = (await GoalService.GetGoalsAsync(userId)).Where(g => !g.IsComplete).ToList();
-        currentPlan = await PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
-        allIdeas    = await IdeaService.GetIdeasAsync(userId);
+        balances      = await AccountService.GetBalancesAsync(userId);
+        activeGoals   = (await GoalService.GetGoalsAsync(userId)).Where(g => !g.IsComplete).ToList();
+        currentPlan   = await PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
+        allIdeas      = await IdeaService.GetIdeasAsync(userId);
+        upcomingPlans = await ActivityPlanService.GetPlansAsync(userId);
     }
 
     private static string FormatCurrency(decimal amount) =>

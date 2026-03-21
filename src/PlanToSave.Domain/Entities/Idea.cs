@@ -15,4 +15,6 @@ public class Idea
     public string? Tags { get; set; }
     public IdeaStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    public ICollection<ActivityPlan> ActivityPlans { get; set; } = new List<ActivityPlan>();
 }

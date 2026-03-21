@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PlanToSave.Application.Accounts;
 using PlanToSave.Application.Flows;
+using PlanToSave.Application.Activities;
 using PlanToSave.Application.Goals;
 using PlanToSave.Application.Ideas;
 using PlanToSave.Application.Plans;
@@ -85,6 +86,7 @@ builder.Services.AddScoped<IMonthlyPlanService, MonthlyPlanService>();
 builder.Services.AddScoped<IFlowTemplateService, FlowTemplateService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
+builder.Services.AddScoped<IActivityPlanService, ActivityPlanService>();
 
 var app = builder.Build();
 

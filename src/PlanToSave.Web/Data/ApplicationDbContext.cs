@@ -15,6 +15,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ActualFlow> ActualFlows => Set<ActualFlow>();
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<Idea> Ideas => Set<Idea>();
+    public DbSet<ActivityPlan> ActivityPlans => Set<ActivityPlan>();
+    public DbSet<ActivityStep> ActivitySteps => Set<ActivityStep>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -171,6 +173,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(i => i.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── ActivityPlans ──────────────────────────────────────────────
+        builder.Entity<ActivityPlan>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Notes).HasMaxLength(1000);
+            e.Property(p => p.Status).HasConversion<string>();
+            e.HasIndex(p => p.UserId);
+            e.HasIndex(p => p.PlannedDate);
+            e.HasOne(p => p.Idea).WithMany(i => i.ActivityPlans)
+                .HasForeignKey(p => p.IdeaId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── ActivitySteps ──────────────────────────────────────────────
+        builder.Entity<ActivityStep>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.Property(s => s.Title).HasMaxLength(300).IsRequired();
+            e.HasOne(s => s.ActivityPlan).WithMany(p => p.Steps)
+                .HasForeignKey(s => s.ActivityPlanId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -1,0 +1,124 @@
+@page "/upcoming"
+@attribute [Authorize]
+@inject IActivityPlanService ActivityPlanService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Upcoming Plans — PlanToSave</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <div>
+        <h1 class="h3 mb-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="me-2 text-primary align-text-bottom" viewBox="0 0 16 16">
+                <path d="M10.854 8.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM2 2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H2zm0 3.5v9h12V5H2z"/>
+            </svg>
+            Upcoming Plans
+        </h1>
+        <p class="text-muted small mb-0">Everything you've scheduled, sorted by date.</p>
+    </div>
+    <a href="/ideas" class="btn btn-primary">+ Plan Something</a>
+</div>
+
+@if (plans is null)
+{
+    <p class="text-muted mt-4">Loading...</p>
+}
+else if (plans.Count == 0)
+{
+    <div class="card text-center py-5 mt-4">
+        <div class="card-body text-muted">
+            <p class="mb-2">Nothing scheduled yet.</p>
+            <a href="/ideas" class="btn btn-sm btn-primary">Browse your ideas →</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3 mt-2">
+        @foreach (var plan in plans)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            bool isOverdue = plan.PlannedDate.HasValue && plan.PlannedDate.Value < today;
+            int pct = plan.TotalSteps > 0 ? (int)Math.Round((double)plan.CompletedSteps / plan.TotalSteps * 100) : 0;
+            string progressClass = pct >= 100 ? "bg-success" : (isOverdue ? "bg-danger" : "bg-primary");
+
+            <div class="col-sm-6 col-lg-4">
+                <div class="card h-100 @(isOverdue ? "border-danger" : "")">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <div>
+                                <h5 class="card-title mb-0 fs-6 fw-semibold">@plan.IdeaTitle</h5>
+                                <span class="badge @GetCategoryBadge(plan.IdeaCategory) mt-1">@plan.IdeaCategory.ToString().ToLower()</span>
+                            </div>
+                            <button class="btn btn-sm btn-link text-danger p-0 ms-1" @onclick="() => DeletePlan(plan.Id)" title="Remove plan">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="small @(isOverdue ? "text-danger fw-semibold" : "text-muted") mb-2 mt-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                            </svg>
+                            @if (plan.PlannedDate.HasValue)
+                            {
+                                @plan.PlannedDate.Value.ToString("MMMM d, yyyy")
+                                @if (isOverdue) { <span class="ms-1">(overdue)</span> }
+                            }
+                            else
+                            {
+                                <span>TBD</span>
+                            }
+                        </div>
+
+                        <div class="d-flex justify-content-between text-muted small mb-1">
+                            <span>Progress</span>
+                            <span>@plan.CompletedSteps/@plan.TotalSteps steps</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 6px;">
+                            <div class="progress-bar @progressClass" style="width: @pct%"
+                                 role="progressbar" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a href="/upcoming/@plan.Id" class="btn btn-sm btn-outline-secondary flex-fill">
+                                &#9776; Steps
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ActivityPlanDto>? plans;
+    private string userId = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+        plans = await ActivityPlanService.GetPlansAsync(userId);
+    }
+
+    private async Task DeletePlan(Guid id)
+    {
+        await ActivityPlanService.DeleteAsync(userId, id);
+        plans = await ActivityPlanService.GetPlansAsync(userId);
+    }
+
+    private static string GetCategoryBadge(IdeaCategory c) => c switch
+    {
+        IdeaCategory.Entertainment => "bg-primary",
+        IdeaCategory.Travel        => "bg-info text-dark",
+        IdeaCategory.Dining        => "bg-warning text-dark",
+        IdeaCategory.Social        => "bg-danger",
+        IdeaCategory.Wellness      => "bg-success",
+        IdeaCategory.Learning      => "bg-secondary",
+        _                          => "bg-secondary"
+    };
+}

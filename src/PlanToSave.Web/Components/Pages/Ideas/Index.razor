@@ -1,6 +1,7 @@
 @page "/ideas"
 @attribute [Authorize]
 @inject IIdeaService IdeaService
+@inject IActivityPlanService ActivityPlanService
 @inject AuthenticationStateProvider AuthState
 
 <PageTitle>My Ideas — PlanToSave</PageTitle>
@@ -196,6 +197,14 @@ else
                         <td><span class="badge @GetStatusBadge(idea.Status)">@idea.Status.ToString().ToLower()</span></td>
                         <td class="text-muted small">@idea.Tags</td>
                         <td class="text-end">
+                            @if (idea.Status == IdeaStatus.Backlog)
+                            {
+                                <button class="btn btn-sm btn-outline-primary me-1"
+                                        @onclick="() => StartPlanThis(idea.Id, idea.Title)"
+                                        title="Schedule this idea">
+                                    Plan This
+                                </button>
+                            }
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteIdea(idea.Id)" title="Delete">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
                                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -209,6 +218,39 @@ else
         </table>
         <div class="text-muted small">@ideas.Count idea(s) found.</div>
     </div>
+
+    @* Inline schedule form — appears when Plan This is clicked *@
+    @if (planningIdeaId.HasValue)
+    {
+        <div class="card mt-3 border-primary">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-1 text-muted">Schedule:</h6>
+                <p class="fw-semibold mb-3">@planningIdeaTitle</p>
+                <EditForm Model="planForm" OnValidSubmit="SavePlan">
+                    <DataAnnotationsValidator />
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label">Date <span class="text-muted small">(leave blank for TBD)</span></label>
+                            <InputDate @bind-Value="planForm.PlannedDate" class="form-control" />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Notes <span class="text-muted small">(optional)</span></label>
+                            <InputText @bind-Value="planForm.Notes" class="form-control" placeholder="Any notes for this activity..." />
+                        </div>
+                    </div>
+                    <ValidationSummary class="text-danger mt-2" />
+                    @if (planError is not null)
+                    {
+                        <div class="text-danger mt-2 small">@planError</div>
+                    }
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary btn-sm">&#10003; Schedule It</button>
+                        <button type="button" class="btn btn-link btn-sm" @onclick="CancelPlanThis">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -326,4 +368,37 @@ else
         IdeaStatus.Skipped => "bg-dark",
         _                  => "bg-secondary"
     };
+
+    // ─── Plan This ────────────────────────────────────────────────────────────
+    private Guid? planningIdeaId;
+    private string planningIdeaTitle = "";
+    private CreateActivityPlanDto planForm = new();
+    private string? planError;
+
+    private void StartPlanThis(Guid id, string title)
+    {
+        planningIdeaId    = id;
+        planningIdeaTitle = title;
+        planForm          = new CreateActivityPlanDto();
+        planError         = null;
+        showAddForm       = false; // close the add-idea form if open
+    }
+
+    private void CancelPlanThis() => planningIdeaId = null;
+
+    private async Task SavePlan()
+    {
+        if (!planningIdeaId.HasValue) return;
+        try
+        {
+            await ActivityPlanService.CreateAsync(userId, planningIdeaId.Value, planForm);
+            planningIdeaId = null;
+            planError      = null;
+            await LoadIdeas(); // refresh so Status badge updates
+        }
+        catch (Exception ex)
+        {
+            planError = ex.Message;
+        }
+    }
 }

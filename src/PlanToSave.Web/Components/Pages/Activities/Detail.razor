@@ -1,0 +1,185 @@
+@page "/upcoming/{Id:guid}"
+@attribute [Authorize]
+@inject IActivityPlanService ActivityPlanService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+
+<PageTitle>@(plan?.IdeaTitle ?? "Plan Detail") — PlanToSave</PageTitle>
+
+@if (plan is null)
+{
+    <p class="text-muted mt-4">Loading...</p>
+}
+else
+{
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/upcoming">Upcoming Plans</a></li>
+            <li class="breadcrumb-item active">@plan.IdeaTitle</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h3 mb-1">@plan.IdeaTitle</h1>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge @GetCategoryBadge(plan.IdeaCategory)">@plan.IdeaCategory.ToString().ToLower()</span>
+                @if (plan.PlannedDate.HasValue)
+                {
+                    var today = DateOnly.FromDateTime(DateTime.Today);
+                    bool overdue = plan.PlannedDate.Value < today;
+                    <span class="small @(overdue ? "text-danger fw-semibold" : "text-muted")">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                        @plan.PlannedDate.Value.ToString("MMMM d, yyyy")
+                        @if (overdue) { <span> · overdue</span> }
+                    </span>
+                }
+                else
+                {
+                    <span class="text-muted small">TBD — no date set</span>
+                }
+            </div>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" @onclick="DeletePlan">Delete Plan</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(plan.Notes))
+    {
+        <div class="alert alert-secondary py-2 mb-3 small">
+            <strong>Notes:</strong> @plan.Notes
+        </div>
+    }
+
+    @* Progress summary *@
+    int pct = plan.TotalSteps > 0 ? (int)Math.Round((double)plan.CompletedSteps / plan.TotalSteps * 100) : 0;
+    string progressClass = pct >= 100 ? "bg-success" : "bg-primary";
+    <div class="d-flex justify-content-between align-items-center text-muted small mb-1">
+        <span>Progress</span>
+        <span>@plan.CompletedSteps / @plan.TotalSteps steps complete · @pct%</span>
+    </div>
+    <div class="progress mb-4" style="height: 10px;">
+        <div class="progress-bar @progressClass" style="width: @pct%"
+             role="progressbar" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+
+    @* Steps checklist *@
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <span class="fw-semibold">Steps</span>
+            <span class="text-muted small">@plan.CompletedSteps / @plan.TotalSteps complete</span>
+        </div>
+
+        @if (plan.Steps.Count == 0)
+        {
+            <div class="card-body text-muted small">
+                No steps yet. Use the field below to break this activity into manageable pieces.
+            </div>
+        }
+        else
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var step in plan.Steps)
+                {
+                    <li class="list-group-item d-flex align-items-center gap-2 py-2">
+                        <input type="checkbox" class="form-check-input mt-0 flex-shrink-0"
+                               checked="@step.IsComplete"
+                               @onchange="() => ToggleStep(step.Id)" />
+                        <span class="flex-grow-1 @(step.IsComplete ? "text-decoration-line-through text-muted" : "")">
+                            @step.Title
+                        </span>
+                        <button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
+                                @onclick="() => DeleteStep(step.Id)" title="Remove step">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                            </svg>
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="card-footer">
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="Add a step…"
+                       @bind="newStepTitle" @bind:event="oninput"
+                       @onkeydown="OnStepKeyDown" />
+                <button class="btn btn-primary" @onclick="AddStep"
+                        disabled="@(string.IsNullOrWhiteSpace(newStepTitle))">
+                    Add
+                </button>
+            </div>
+            @if (stepError is not null)
+            {
+                <div class="text-danger small mt-1">@stepError</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ActivityPlanDto? plan;
+    private string userId = "";
+    private string newStepTitle = "";
+    private string? stepError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        userId = auth.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+        plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+    }
+
+    private async Task AddStep()
+    {
+        if (string.IsNullOrWhiteSpace(newStepTitle)) return;
+        try
+        {
+            await ActivityPlanService.AddStepAsync(userId, Id, newStepTitle.Trim());
+            newStepTitle = "";
+            stepError = null;
+            plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+        }
+        catch (Exception ex)
+        {
+            stepError = ex.Message;
+        }
+    }
+
+    private async Task OnStepKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await AddStep();
+    }
+
+    private async Task ToggleStep(Guid stepId)
+    {
+        await ActivityPlanService.ToggleStepAsync(userId, stepId);
+        plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+    }
+
+    private async Task DeleteStep(Guid stepId)
+    {
+        await ActivityPlanService.DeleteStepAsync(userId, stepId);
+        plan = await ActivityPlanService.GetPlanAsync(userId, Id);
+    }
+
+    private async Task DeletePlan()
+    {
+        await ActivityPlanService.DeleteAsync(userId, Id);
+        Nav.NavigateTo("/upcoming");
+    }
+
+    private static string GetCategoryBadge(IdeaCategory c) => c switch
+    {
+        IdeaCategory.Entertainment => "bg-primary",
+        IdeaCategory.Travel        => "bg-info text-dark",
+        IdeaCategory.Dining        => "bg-warning text-dark",
+        IdeaCategory.Social        => "bg-danger",
+        IdeaCategory.Wellness      => "bg-success",
+        IdeaCategory.Learning      => "bg-secondary",
+        _                          => "bg-secondary"
+    };
+}
