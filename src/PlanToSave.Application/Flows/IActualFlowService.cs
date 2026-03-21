@@ -30,4 +30,13 @@ public interface IActualFlowService
     /// </summary>
     Task<(Dictionary<string, Guid> Deposits, Dictionary<string, Guid> Withdrawals)>
         SuggestCounterAccountsAsync(string userId, IReadOnlyList<string?> descriptions);
+
+    /// <summary>
+    /// Checks a list of candidate import rows against the user's existing transactions
+    /// and returns the 0-based indices of rows that appear to be duplicates.
+    /// A duplicate is an existing flow with identical Date, Amount, FromAccountId,
+    /// and ToAccountId.
+    /// </summary>
+    Task<HashSet<int>> FindPotentialDuplicatesAsync(
+        string userId, IReadOnlyList<BulkImportRowDto> candidates);
 }
