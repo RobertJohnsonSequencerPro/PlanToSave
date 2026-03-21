@@ -2,7 +2,11 @@
 
 ## Overview
 
-A multi-user savings and spending planner built with Blazor Web App (.NET 8), PostgreSQL, and hosted on Render. Users can model their finances using a stock/flow paradigm, build monthly spending plans, track actual vs. planned flows, and set savings goals that auto-generate contribution schedules.
+PlanToSave is a life-first financial planner built with Blazor Web App (.NET 8), PostgreSQL, and hosted on Render. The central idea is that money is a means, not an end — so the app leads with *what you want to do with your life* and works backwards into the budget.
+
+Users capture a backlog of fun activities and experiences ("Ideas"), then plan when and how they'll happen. The financial layer — stock/flow accounts, monthly spending plans, and savings goals — exists to make those ideas real. The budget is motivated by life, not the other way around.
+
+The full loop: **Dream it → Budget for it → Plan it → Do it → Review it.**
 
 ---
 
@@ -22,10 +26,30 @@ A multi-user savings and spending planner built with Blazor Web App (.NET 8), Po
 
 ## Domain Model
 
+### The Life Loop
+
+Every feature in the app connects to one of five stages:
+
+| Stage | Question | Feature |
+|---|---|---|
+| **Dream** | What do I want to do? | Ideas backlog |
+| **Budget** | Can I afford it? | Accounts, Goals, Monthly Plans |
+| **Plan** | When will I do it? | Activity Plans (date, steps, calendar export) |
+| **Do** | Did I do it? | Mark complete + log the actual cost |
+| **Review** | Was it worth it? | Star rating, reflections, spend vs. estimate |
+
+---
+
 ### Core Concepts
 
-**Stock accounts** hold a running balance. Flows into and out of them change that balance.  
+**Stock accounts** hold a running balance. Transactions into and out of them change that balance.  
 **Flow accounts** (Income, Expense) are pipes only — they have no balance, only period totals.
+
+**Ideas** are activities and experiences a user wants to have someday. They live in a backlog until scheduled.  
+**Activity Plans** are scheduled instances of an Idea — a date, optional checklist steps, an estimated cost, and an optional link to a savings Goal. When the date passes and the user marks it done, it generates a Review.  
+**Calendar Events** represent any important date in the system — an activity plan date, a bill due date, a goal milestone, a tuition deadline — and can be exported as `.ics` or linked to Google Calendar.
+
+---
 
 ### Account Types
 
@@ -38,11 +62,11 @@ A multi-user savings and spending planner built with Blazor Web App (.NET 8), Po
 | `Credit` | Yes | Credit card — starts at 0, goes negative when spent, paid down by transfers |
 | `Investment` | Yes | Retirement, brokerage, etc. |
 
-### Rules for Flows
+### Rules for Transactions
 
 - Income accounts may only appear as `FromAccount` (money flows *from* income *into* the plan)
 - Expense accounts may only appear as `ToAccount` (money flows *out* of the plan *to* expenses)
-- Stock accounts may appear on either side of a flow
+- Stock accounts may appear on either side of a transaction
 
 ---
 
@@ -63,7 +87,7 @@ Accounts
   IsArchived (bool)
   CreatedAt
 
-FlowTemplates                (recurring monthly flow definitions)
+FlowTemplates                (recurring monthly transaction definitions)
   Id (Guid)
   UserId (FK → Users)
   FromAccountId (FK → Accounts)
@@ -101,6 +125,7 @@ ActualFlows
   Date (DateOnly)
   Description
   PlannedFlowId (FK → PlannedFlows, nullable) -- linked to a plan item?
+  ActivityPlanId (FK → ActivityPlans, nullable) -- was this spend for a fun activity?
   CreatedAt
 
 Goals
@@ -114,6 +139,62 @@ Goals
   StartDate (DateOnly)
   SourceAccountId (FK → Accounts — where contributions come from)
   IsComplete (bool)
+  IdeaId (FK → Ideas, nullable)              -- is this goal saving toward a fun activity?
+  CreatedAt
+
+-- ── Life Loop entities ───────────────────────────────────────────────────
+
+Ideas                        (activity/experience backlog)
+  Id (Guid)
+  UserId (FK → Users)
+  Title
+  Description (nullable)
+  Category (enum: Entertainment | Travel | Dining | Social | Wellness | Learning | Other)
+  EnergyLevel (enum: Low | Medium | High)
+  CostEstimate (enum: Free | Cheap | Moderate | Expensive)
+  EstimatedAmount (decimal, nullable)       -- optional dollar estimate
+  Tags (string, nullable)                   -- comma-separated, for filtering
+  Status (enum: Backlog | Planned | Done | Skipped)
+  CreatedAt
+
+ActivityPlans                (a scheduled instance of an Idea)
+  Id (Guid)
+  UserId (FK → Users)
+  IdeaId (FK → Ideas)
+  PlannedDate (DateOnly, nullable)          -- null = TBD
+  GoalId (FK → Goals, nullable)             -- saving toward this?
+  PlannedFlowId (FK → PlannedFlows, nullable) -- budget line item for this event
+  Notes (nullable)
+  Status (enum: Upcoming | Done | Skipped)
+  CompletedDate (DateOnly, nullable)
+  CreatedAt
+
+ActivitySteps                (optional checklist items for an ActivityPlan)
+  Id (Guid)
+  ActivityPlanId (FK → ActivityPlans)
+  Title
+  SortOrder (int)
+  IsComplete (bool)
+  CompletedAt (DateTimeOffset, nullable)
+
+ActivityReviews              (post-activity reflection, created when marked Done)
+  Id (Guid)
+  ActivityPlanId (FK → ActivityPlans, UNIQUE)
+  Rating (int 1–5, nullable)
+  Reflection (string, nullable)
+  ActualAmount (decimal, nullable)          -- what it actually cost
+  CreatedAt
+
+CalendarEvents               (any important date in the system)
+  Id (Guid)
+  UserId (FK → Users)
+  Title
+  Date (DateOnly)
+  Notes (nullable)
+  EventType (enum: ActivityPlan | BillDue | GoalMilestone | Custom)
+  ActivityPlanId (FK → ActivityPlans, nullable)
+  GoalId (FK → Goals, nullable)
+  PlannedFlowId (FK → PlannedFlows, nullable)
   CreatedAt
 ```
 
@@ -138,11 +219,14 @@ PlanToSave/
 │   │   ├── Components/
 │   │   │   ├── Layout/
 │   │   │   ├── Pages/
-│   │   │   │   ├── Dashboard.razor      # Stock balances, snapshot
+│   │   │   │   ├── Dashboard.razor      # Life loop summary + balance cards
 │   │   │   │   ├── Accounts/            # CRUD for accounts
 │   │   │   │   ├── Plans/               # Monthly plan view & entry
-│   │   │   │   ├── Flows/               # Actual flow log
-│   │   │   │   └── Goals/               # Goal management
+│   │   │   │   ├── Flows/               # Actual transaction log
+│   │   │   │   ├── Goals/               # Savings goal management
+│   │   │   │   ├── Ideas/               # Activity idea backlog
+│   │   │   │   ├── Activities/          # Schedule, steps, review
+│   │   │   │   └── Calendar/            # Unified calendar / export
 │   │   │   └── Shared/                  # Reusable UI components
 │   │   ├── Program.cs
 │   │   └── appsettings.json
@@ -151,7 +235,10 @@ PlanToSave/
 │   │   ├── Accounts/
 │   │   ├── Plans/
 │   │   ├── Flows/
-│   │   └── Goals/
+│   │   ├── Goals/
+│   │   ├── Ideas/
+│   │   ├── Activities/
+│   │   └── Calendar/
 │   │
 │   ├── PlanToSave.Domain/               # Entities, enums, domain logic
 │   │   ├── Entities/
@@ -182,55 +269,108 @@ Redirect URIs to register in Google Console:
 
 ## Build Phases
 
-### Phase 1 — Scaffold & Infrastructure
-- [ ] Create solution and project structure (`dotnet new`)
-- [ ] Set up EF Core with Npgsql, configure `AppDbContext`
-- [ ] Add ASP.NET Core Identity with PostgreSQL store
-- [ ] Wire up Google OAuth
-- [ ] Write initial migrations, verify DB creates cleanly
-- [ ] Stub out Blazor layout with navigation and user info in header
-- [ ] Dockerfile + Render deployment config
+Phases 1–8 are complete and deployed. The remaining phases build the Life Loop on top of the financial foundation.
 
-### Phase 2 — Accounts
-- [ ] Account entity, enum, migration
-- [ ] Account CRUD pages (list, create, edit, archive)
-- [ ] Enforce flow direction rules on account type at domain layer
+### ✅ Phase 1 — Scaffold & Infrastructure
+- Solution, EF Core, Npgsql, Identity, Google OAuth, migrations, Dockerfile, Render deploy
 
-### Phase 3 — Dashboard
-- [ ] Balance computation query (on-the-fly from ActualFlows)
-- [ ] Dashboard page: cards showing current balance for each stock account
-- [ ] Period-total summary for Income and Expense accounts (current month)
+### ✅ Phase 2 — Accounts
+- Account CRUD, type enum, flow direction rules
 
-### Phase 4 — Actual Flows
-- [ ] ActualFlow entity + migration
-- [ ] Flow entry form (from/to account picker with type-aware filtering, amount, date, description)
-- [ ] Flow log page with filter by account and date range
-- [ ] Balance on dashboard updates live (Blazor Server re-render)
+### ✅ Phase 3 — Dashboard
+- Balance cards, period totals for income/expense accounts
 
-### Phase 5 — Monthly Planning
-- [ ] MonthlyPlan + PlannedFlow entities + migration
-- [ ] Create/open a plan for a month
-- [ ] Add/edit/remove planned flows within a plan
-- [ ] Plan vs. Actual comparison view per month
+### ✅ Phase 4 — Actual Transactions
+- Transaction log with date/account filters, linked planned transaction
 
-### Phase 6 — Recurring Templates
-- [ ] FlowTemplate entity + migration
-- [ ] Template CRUD
-- [ ] "Seed from templates" action on a new monthly plan
+### ✅ Phase 5 — Monthly Planning
+- MonthlyPlan + PlannedTransactions, plan vs. actual comparison view
 
-### Phase 7 — Goals
-- [ ] Goal entity + migration
-- [ ] Goal CRUD (name, target account, amount, target date, source account)
-- [ ] Contribution schedule generator: divides remaining amount by remaining months, creates PlannedFlow records tagged with GoalId
-- [ ] Goal progress indicator on dashboard (% funded based on ActualFlows tagged to goal)
+### ✅ Phase 6 — Recurring Templates
+- FlowTemplate CRUD, "seed from templates" on new monthly plan
 
-### Phase 8 — Polish & Production Readiness
-- [ ] Input validation (FluentValidation or DataAnnotations)
-- [ ] Error handling middleware and user-facing error UI
-- [ ] Security hardening: CSRF, HTTPS enforcement, rate limiting on auth endpoints
-- [ ] EF Core query review — add indexes on UserId FKs, date columns
-- [ ] Render environment variable configuration guide
-- [ ] Smoke test against Render-hosted PostgreSQL
+### ✅ Phase 7 — Goals
+- Goal CRUD, contribution schedule generator (PlannedFlows tagged to GoalId), progress on dashboard
+
+### ✅ Phase 8 — Polish
+- Balance snapshots + variance, interest rules, dark dual-panel nav, concurrent DbContext fix, UI label cleanup
+
+---
+
+### Phase 9 — Ideas Backlog *(next)*
+Introduce the fun activity backlog. This is the entry point to the life loop.
+
+- [ ] `Idea` entity + migration (`Category`, `EnergyLevel`, `CostEstimate`, `EstimatedAmount`, `Tags`, `Status`)
+- [ ] Ideas list page — table with filter by category, energy, cost, status, and tag text search
+- [ ] Add Idea form — title, description, category, energy, cost estimate, estimated amount, tags
+- [ ] Edit Idea inline or on a detail page
+- [ ] Delete Idea (soft or hard)
+- [ ] Status badge rendering (Backlog / Planned / Done / Skipped) with color coding
+- [ ] Nav link: **My Ideas** in the sidebar
+- [ ] Dashboard card: "X ideas in your backlog" with quick link to add one
+
+### Phase 10 — Activity Planning
+Turn a backlog idea into a scheduled plan with an optional checklist.
+
+- [ ] `ActivityPlan` entity + migration (`PlannedDate`, `Status`, `Notes`, link to `IdeaId`)
+- [ ] `ActivityStep` entity + migration (`Title`, `SortOrder`, `IsComplete`)
+- [ ] "Plan This" button on an Idea → opens schedule form (date picker, optional notes)
+- [ ] Activity detail page — shows steps checklist, planned date, linked idea, linked goal
+- [ ] Add/reorder/complete/remove steps within the detail page
+- [ ] Upcoming Plans page — card grid sorted by date, showing progress bar (steps done/total), overdue flag
+- [ ] Idea status auto-updates to `Planned` when an ActivityPlan is created; back to `Backlog` if plan is deleted
+- [ ] Dashboard "Coming up this week" panel — activities with dates within the next 7 days
+- [ ] Nav: **Upcoming Plans** in sidebar
+
+### Phase 11 — Review Loop
+Close the life loop: prompt the user to reflect after an activity date passes.
+
+- [ ] `ActivityReview` entity + migration (`Rating` 1–5, `Reflection`, `ActualAmount`)
+- [ ] "Needs review" detection: ActivityPlans where `PlannedDate < today` and `Status = Upcoming`
+- [ ] Review page — grid of cards needing review, each with "Yes, I did it!" / "Skip / didn't happen" actions
+- [ ] "Yes, I did it!" flow: star rating input, reflection textarea, actual cost field → saves `ActivityReview`, sets `Status = Done`, updates `Idea.Status = Done`
+- [ ] "Skip / didn't happen" → sets `Status = Skipped`, `Idea.Status = Backlog` (returns to backlog for replanning)
+- [ ] Dashboard "Needs review" panel — shows activities awaiting review with quick link
+- [ ] Dashboard: completed count stat card
+- [ ] Nav: **Review** in sidebar
+
+### Phase 12 — Calendar & Export
+Make every important date in the system visible and exportable.
+
+- [ ] `CalendarEvent` entity + migration (`Title`, `Date`, `EventType`, `Notes`, optional FKs to ActivityPlan / Goal / PlannedFlow)
+- [ ] Auto-create CalendarEvents when: an ActivityPlan gets a date, a Goal has a TargetDate, a PlannedFlow has a due date (e.g. tuition)
+- [ ] Calendar page — monthly grid view of all events; click to see detail
+- [ ] `.ics` export — single event download from any card that has a date
+- [ ] Google Calendar link — generates a `https://calendar.google.com/calendar/r/eventedit?...` pre-filled URL
+- [ ] "Add to calendar" button surfaces on: Upcoming Plans cards, Goal detail, PlannedTransaction due-date rows
+- [ ] Custom calendar event entry — freeform title, date, note (e.g. "Tuition due", "Car insurance renewal")
+
+### Phase 13 — Deep Integration: Budget ↔ Life Loop
+Wire the financial layer and the life loop together so each reinforces the other.
+
+- [ ] Link a Goal to an Idea — when a Goal is created, optionally attach it to an Idea ("I'm saving for Santa Fe Weekend")
+  - Goal card on dashboard shows the linked idea title
+  - Idea detail shows funding progress from the linked goal
+- [ ] Link an ActivityPlan to a monthly PlannedTransaction — when scheduling an activity, optionally pick (or create) a budget line item for it
+  - PlannedTransaction row in the monthly plan shows the activity name
+  - Activity detail shows budget status (planned amount vs. actual spend)
+- [ ] When "Yes, I did it!" is completed with an actual amount, offer to log it as an ActualTransaction (pre-filled from/to accounts)
+- [ ] Cost estimate on Ideas (cheap/moderate/expensive) surfaces as a filter on the Surprise Me feature (Phase 14)
+- [ ] Dashboard redesign: lead with life loop stats (backlog size, upcoming this week, needs review), then financial summary below
+
+### Phase 14 — Surprise Me!
+Surface a random unplanned idea from the backlog to fight decision paralysis.
+
+- [ ] "Surprise Me!" button in nav (dice/shuffle icon)
+- [ ] Random selection weighted by: status = Backlog, optionally filtered by energy level or cost (user picks filters first, or pure random)
+- [ ] Result page: shows the idea card with "Plan This" and "Skip for now" CTAs
+
+### Phase 15 — Polish & Production Readiness
+- [ ] Input validation across all new forms
+- [ ] Empty-state illustrations/prompts on Ideas, Upcoming Plans, Review pages
+- [ ] EF Core index review: `UserId`, `Status`, `PlannedDate` columns
+- [ ] Accessibility pass: focus management, ARIA labels, keyboard nav
+- [ ] Security review: all new service methods scope to UserId
 
 ---
 
@@ -258,9 +398,13 @@ Run migrations at app startup (`context.Database.MigrateAsync()` in `Program.cs`
 
 | Decision | Rationale |
 |---|---|
-| Blazor Server (not WASM) | No cold-start penalty; real-time balance updates via SignalR; simpler auth flow |
+| Blazor Server (not WASM) | No cold-start penalty; real-time updates via SignalR; simpler auth flow |
 | Compute balances on-the-fly | Fully auditable; eliminates risk of cached balance drift; easy to add DB view later |
 | Single ASP.NET Core host | Simplest Render deployment — one service, one Dockerfile |
 | Per-entity UserId FK | Simplest multi-tenancy model; no risk of cross-user data leakage |
 | FlowTemplate separate from PlannedFlow | Templates are definitions; plan items are instances — avoids mutation of historical plans when templates change |
 | Goals generate PlannedFlows | Keeps the planning UI uniform — goal contributions are just planned flows tagged with a GoalId |
+| Ideas are always the entry point | Every financial action (goal, budget line, transaction) can be traced back to something a human actually wants to do — prevents the budget from feeling abstract |
+| ActivityPlan ↔ PlannedFlow link is optional | Users can plan activities without a budget line and budget without a fun activity; the link is an upgrade, not a prerequisite |
+| CalendarEvents are first-class | Any date in the system — activity, bill, goal milestone — deserves equal treatment; export is a feature, not an afterthought |
+| ReviewLoop returns skipped items to Backlog | A skipped activity isn't a failure; it goes back into the pool for future planning automatically |

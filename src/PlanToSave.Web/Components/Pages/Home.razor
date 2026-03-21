@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject IAccountService AccountService
 @inject IGoalService GoalService
+@inject IIdeaService IdeaService
 @inject IMonthlyPlanService PlanService
 
 <PageTitle>Dashboard — PlanToSave</PageTitle>
@@ -17,6 +18,50 @@
 }
 else
 {
+    @* Life Loop Summary *@
+    <h5 class="text-muted text-uppercase small fw-semibold mb-3">Your Life Plan</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-4">
+            <div class="card h-100">
+                <div class="card-body text-center py-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-warning d-block mx-auto mb-1" viewBox="0 0 16 16">
+                        <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z"/>
+                    </svg>
+                    <div class="fs-3 fw-bold">@BacklogCount</div>
+                    <div class="text-muted small">Ideas in backlog</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card h-100">
+                <div class="card-body text-center py-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-primary d-block mx-auto mb-1" viewBox="0 0 16 16">
+                        <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zM1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857V3.857z"/>
+                        <path d="M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                    </svg>
+                    <div class="fs-3 fw-bold">@PlannedCount</div>
+                    <div class="text-muted small">Planned activities</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card h-100">
+                <div class="card-body text-center py-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="text-success d-block mx-auto mb-1" viewBox="0 0 16 16">
+                        <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/>
+                    </svg>
+                    <div class="fs-3 fw-bold">@DoneCount</div>
+                    <div class="text-muted small">Completed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mb-4 text-end">
+        <a href="/ideas" class="text-muted small">Manage ideas →</a>
+    </div>
+
+    <hr class="my-4" />
+
     @if (balances.Count == 0)
     {
         <div class="alert alert-info mt-2">
@@ -160,7 +205,12 @@ else
 
     private List<AccountBalanceDto>? balances;
     private List<GoalDto> activeGoals = [];
+    private List<IdeaDto> allIdeas = [];
     private MonthlyPlanDetailDto? currentPlan;
+
+    private int BacklogCount => allIdeas.Count(i => i.Status == IdeaStatus.Backlog);
+    private int PlannedCount => allIdeas.Count(i => i.Status == IdeaStatus.Planned);
+    private int DoneCount    => allIdeas.Count(i => i.Status == IdeaStatus.Done);
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,6 +220,7 @@ else
         balances    = await AccountService.GetBalancesAsync(userId);
         activeGoals = (await GoalService.GetGoalsAsync(userId)).Where(g => !g.IsComplete).ToList();
         currentPlan = await PlanService.GetPlanDetailAsync(userId, DateTime.Today.Year, DateTime.Today.Month);
+        allIdeas    = await IdeaService.GetIdeasAsync(userId);
     }
 
     private static string FormatCurrency(decimal amount) =>

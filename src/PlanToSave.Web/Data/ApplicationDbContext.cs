@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PlannedFlow> PlannedFlows => Set<PlannedFlow>();
     public DbSet<ActualFlow> ActualFlows => Set<ActualFlow>();
     public DbSet<Goal> Goals => Set<Goal>();
+    public DbSet<Idea> Ideas => Set<Idea>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -149,6 +150,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Ideas ─────────────────────────────────────────────────────
+        builder.Entity<Idea>(e =>
+        {
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Title).HasMaxLength(200).IsRequired();
+            e.Property(i => i.Description).HasMaxLength(1000);
+            e.Property(i => i.Category).HasConversion<string>();
+            e.Property(i => i.EnergyLevel).HasConversion<string>();
+            e.Property(i => i.CostEstimate).HasConversion<string>();
+            e.Property(i => i.Status).HasConversion<string>();
+            e.Property(i => i.EstimatedAmount).HasPrecision(18, 2);
+            e.Property(i => i.Tags).HasMaxLength(500);
+            e.HasIndex(i => i.UserId);
+            e.HasIndex(i => i.Status);
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(i => i.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
