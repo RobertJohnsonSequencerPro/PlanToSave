@@ -139,24 +139,26 @@
                     </select>
                 </div>
                 <div class="col-sm-4">
-                    <label class="form-label small fw-semibold">Inflow source (deposits)</label>
-                    <select class="form-select form-select-sm" @bind="inflowAccountId">
+                    <label class="form-label small fw-semibold">Default inflow source <span class="text-muted fw-normal">(deposits)</span></label>
+                    <select class="form-select form-select-sm" @onchange="e => ApplyDefaultInflow(e.Value?.ToString())">
                         <option value="">— select —</option>
                         @foreach (var a in fromAccounts)
                         {
-                            <option value="@a.Id">@a.Name (@a.Type)</option>
+                            <option value="@a.Id" selected="@(inflowAccountId == a.Id)">@a.Name (@a.Type)</option>
                         }
                     </select>
+                    <div class="form-text">Applies to all deposit rows — override per-row below</div>
                 </div>
                 <div class="col-sm-4">
-                    <label class="form-label small fw-semibold">Outflow destination (spending)</label>
-                    <select class="form-select form-select-sm" @bind="outflowAccountId">
+                    <label class="form-label small fw-semibold">Default outflow destination <span class="text-muted fw-normal">(spending)</span></label>
+                    <select class="form-select form-select-sm" @onchange="e => ApplyDefaultOutflow(e.Value?.ToString())">
                         <option value="">— select —</option>
                         @foreach (var a in toAccounts)
                         {
-                            <option value="@a.Id">@a.Name (@a.Type)</option>
+                            <option value="@a.Id" selected="@(outflowAccountId == a.Id)">@a.Name (@a.Type)</option>
                         }
                     </select>
+                    <div class="form-text">Applies to all withdrawal rows — override per-row below</div>
                 </div>
             </div>
         </div>
@@ -193,6 +195,7 @@
                         <th>Date</th>
                         <th class="text-end">Amount</th>
                         <th>Direction</th>
+                        <th style="min-width:160px">Account</th>
                         <th>Description</th>
                         <th>Note</th>
                     </tr>
@@ -234,6 +237,21 @@
                                     {
                                         <span class="text-secondary">zero</span>
                                     }
+                                }
+                            </td>
+                            <td>
+                                @if (!hasError && !isZero)
+                                {
+                                    var counterOptions = isCredit ? fromAccounts : toAccounts;
+                                    <select class="form-select form-select-sm" style="min-width:150px;font-size:.8rem"
+                                            value="@state.CounterAccountId"
+                                            @onchange="e => { if (Guid.TryParse(e.Value?.ToString(), out var gid)) state.CounterAccountId = gid; }">
+                                        <option value="@Guid.Empty">— none —</option>
+                                        @foreach (var a in counterOptions)
+                                        {
+                                            <option value="@a.Id" selected="@(state.CounterAccountId == a.Id)">@a.Name</option>
+                                        }
+                                    </select>
                                 }
                             </td>
                             <td class="text-muted">@(row.Description ?? "—")</td>
@@ -304,6 +322,7 @@
     {
         public required CsvPreviewRow Row { get; set; }
         public bool Skip { get; set; }
+        public Guid CounterAccountId { get; set; }
     }
     private List<RowState> rowStates = [];
 
@@ -392,8 +411,23 @@
                 Row  = r,
                 // Auto-skip rows that have errors or zero amount
                 Skip = r.ParseError is not null || r.Amount == 0,
+                CounterAccountId = r.Amount > 0 ? inflowAccountId : outflowAccountId,
             })
             .ToList();
+    }
+
+    private void ApplyDefaultInflow(string? val)
+    {
+        inflowAccountId = Guid.TryParse(val, out var id) ? id : Guid.Empty;
+        foreach (var s in rowStates.Where(r => r.Row.Amount > 0))
+            s.CounterAccountId = inflowAccountId;
+    }
+
+    private void ApplyDefaultOutflow(string? val)
+    {
+        outflowAccountId = Guid.TryParse(val, out var id) ? id : Guid.Empty;
+        foreach (var s in rowStates.Where(r => r.Row.Amount < 0))
+            s.CounterAccountId = outflowAccountId;
     }
 
     private async Task DoImport()
@@ -420,14 +454,14 @@
             if (row.Amount > 0)
             {
                 // Deposit: inflow source → bank account
-                fromId = inflowAccountId != Guid.Empty ? inflowAccountId : bankAccountId;
+                fromId = state.CounterAccountId != Guid.Empty ? state.CounterAccountId : bankAccountId;
                 toId   = bankAccountId;
             }
             else
             {
                 // Withdrawal: bank account → outflow destination
                 fromId = bankAccountId;
-                toId   = outflowAccountId != Guid.Empty ? outflowAccountId : bankAccountId;
+                toId   = state.CounterAccountId != Guid.Empty ? state.CounterAccountId : bankAccountId;
             }
 
             if (fromId == toId) continue; // skip if same account
