@@ -1,0 +1,458 @@
+@page "/flows/import"
+@attribute [Authorize]
+@using PlanToSave.Web.Services
+@inject CsvImportService CsvParser
+@inject IActualFlowService FlowService
+@inject NavigationManager Nav
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Import Transactions — PlanToSave</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Import Transactions from CSV</h1>
+    <a href="/flows" class="btn btn-outline-secondary btn-sm">← Back to Transactions</a>
+</div>
+
+<p class="text-muted mb-4">
+    Bank CSV exports are auto-detected. Common formats from Chase, Bank of America, Barclays, ANZ,
+    Commonwealth, Monzo, HSBC, and others are recognised automatically.
+</p>
+
+@* ── Step 1 : Upload ────────────────────────────────────────────────────────── *@
+<div class="card mb-4">
+    <div class="card-header fw-semibold">1. Upload bank CSV</div>
+    <div class="card-body">
+        <InputFile OnChange="HandleFileSelected" accept=".csv,.txt,.tsv" class="form-control" />
+        <div class="form-text mt-1">
+            Accepts .csv / .txt / .tsv · max 2 MB · UTF-8, UTF-16, or Windows-1252 encoding
+        </div>
+        @if (fileError is not null)
+        {
+            <div class="alert alert-danger mt-2 mb-0">@fileError</div>
+        }
+    </div>
+</div>
+
+@if (parseResult is not null)
+{
+    @* ── Step 2 : Column mapping + account selection ──────────────────────────── *@
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">2. Map columns &amp; select accounts</div>
+        <div class="card-body">
+
+            @* ── Column mapping ──────────────────────────────────────────────── *@
+            <h6 class="mb-3 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.08em">
+                Column mapping
+                <span class="badge bg-secondary ms-1">delimiter: @parseResult.DetectedDelimiter == "\t" ? "tab" : parseResult.DetectedDelimiter</span>
+            </h6>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Date column <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" @onchange="e => { mapping.DateColumn = e.Value?.ToString(); Reparse(); }">
+                        <option value="">— select —</option>
+                        @foreach (var h in parseResult.DetectedHeaders)
+                        {
+                            <option value="@h" selected="@(mapping.DateColumn == h)">@h</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Description column</label>
+                    <select class="form-select form-select-sm" @onchange="e => { mapping.DescriptionColumn = e.Value?.ToString(); Reparse(); }">
+                        <option value="">— none —</option>
+                        @foreach (var h in parseResult.DetectedHeaders)
+                        {
+                            <option value="@h" selected="@(mapping.DescriptionColumn == h)">@h</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-2">
+                <div class="col-12">
+                    <div class="form-text mb-2">
+                        Use <strong>either</strong> a single signed amount column <em>or</em> separate Debit/Credit columns:
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Amount column (signed)</label>
+                    <select class="form-select form-select-sm" @onchange="e => { mapping.AmountColumn = e.Value?.ToString(); mapping.CreditColumn = null; mapping.DebitColumn = null; Reparse(); }">
+                        <option value="">— none —</option>
+                        @foreach (var h in parseResult.DetectedHeaders)
+                        {
+                            <option value="@h" selected="@(mapping.AmountColumn == h)">@h</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Credit column (money IN)</label>
+                    <select class="form-select form-select-sm" @onchange="e => { mapping.CreditColumn = e.Value?.ToString(); mapping.AmountColumn = null; Reparse(); }">
+                        <option value="">— none —</option>
+                        @foreach (var h in parseResult.DetectedHeaders)
+                        {
+                            <option value="@h" selected="@(mapping.CreditColumn == h)">@h</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Debit column (money OUT)</label>
+                    <select class="form-select form-select-sm" @onchange="e => { mapping.DebitColumn = e.Value?.ToString(); mapping.AmountColumn = null; Reparse(); }">
+                        <option value="">— none —</option>
+                        @foreach (var h in parseResult.DetectedHeaders)
+                        {
+                            <option value="@h" selected="@(mapping.DebitColumn == h)">@h</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            @if (parseResult.GlobalErrors.Count > 0)
+            {
+                <div class="alert alert-warning py-2 mt-3">
+                    @foreach (var e in parseResult.GlobalErrors)
+                    {
+                        <div>@e</div>
+                    }
+                </div>
+            }
+
+            @* ── Account selection ───────────────────────────────────────────── *@
+            <hr class="my-4" />
+            <h6 class="mb-3 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.08em">
+                Account assignment
+            </h6>
+            <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
+                Positive rows (deposits/credits) → <strong>Inflow source</strong> to <strong>Bank account</strong><br />
+                Negative rows (withdrawals/debits) → <strong>Bank account</strong> to <strong>Outflow destination</strong>
+            </div>
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Bank account <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" @bind="bankAccountId">
+                        <option value="">— select —</option>
+                        @foreach (var a in stockAccounts)
+                        {
+                            <option value="@a.Id">@a.Name (@a.Type)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Inflow source (deposits)</label>
+                    <select class="form-select form-select-sm" @bind="inflowAccountId">
+                        <option value="">— select —</option>
+                        @foreach (var a in fromAccounts)
+                        {
+                            <option value="@a.Id">@a.Name (@a.Type)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label small fw-semibold">Outflow destination (spending)</label>
+                    <select class="form-select form-select-sm" @bind="outflowAccountId">
+                        <option value="">— select —</option>
+                        @foreach (var a in toAccounts)
+                        {
+                            <option value="@a.Id">@a.Name (@a.Type)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Step 3 : Preview ───────────────────────────────────────────────────── *@
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+            <span>3. Preview <span class="badge bg-primary ms-1">@rowStates.Count rows</span></span>
+            <div class="d-flex gap-2 align-items-center">
+                @if (ErrorRowCount > 0)
+                {
+                    <span class="badge bg-danger">@ErrorRowCount parse errors</span>
+                }
+                @if (ZeroRowCount > 0)
+                {
+                    <span class="badge bg-secondary">@ZeroRowCount zero-amount (auto-skipped)</span>
+                }
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="() => { foreach (var r in rowStates) r.Skip = false; }">
+                    Select all
+                </button>
+                <button class="btn btn-sm btn-outline-secondary"
+                        @onclick="() => { foreach (var r in rowStates) r.Skip = true; }">
+                    Deselect all
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive" style="max-height:420px;overflow-y:auto">
+            <table class="table table-sm table-hover mb-0" style="font-size:.85rem">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th style="width:40px">Import</th>
+                        <th>Date</th>
+                        <th class="text-end">Amount</th>
+                        <th>Direction</th>
+                        <th>Description</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var state in rowStates)
+                    {
+                        var row = state.Row;
+                        bool hasError = row.ParseError is not null;
+                        bool isZero   = !hasError && row.Amount == 0;
+                        bool isCredit = !hasError && row.Amount > 0;
+                        string rowClass = hasError ? "table-danger" : isZero ? "table-secondary" : "";
+
+                        <tr class="@rowClass">
+                            <td>
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@(!state.Skip && !hasError && !isZero)"
+                                       disabled="@(hasError || isZero)"
+                                       @onchange="e => state.Skip = !(bool)(e.Value ?? false)" />
+                            </td>
+                            <td class="text-nowrap text-muted">
+                                @(row.Date?.ToString("MMM d, yyyy") ?? "—")
+                            </td>
+                            <td class="text-end fw-semibold @(isCredit ? "text-success" : (row.Amount < 0 ? "text-danger" : ""))">
+                                @(row.Amount.HasValue ? row.Amount.Value.ToString("C") : "—")
+                            </td>
+                            <td class="text-muted" style="font-size:.8rem">
+                                @if (!hasError && row.Amount.HasValue)
+                                {
+                                    if (isCredit)
+                                    {
+                                        <span class="text-success">↓ deposit</span>
+                                    }
+                                    else if (row.Amount < 0)
+                                    {
+                                        <span class="text-danger">↑ withdrawal</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary">zero</span>
+                                    }
+                                }
+                            </td>
+                            <td class="text-muted">@(row.Description ?? "—")</td>
+                            <td class="text-danger small">@row.ParseError</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* ── Step 4 : Import button + result ───────────────────────────────────── *@
+    @if (importResult is not null)
+    {
+        <div class="alert @(importResult.Value.Errors.Count == 0 ? "alert-success" : "alert-warning") mb-3">
+            <strong>@importResult.Value.Imported transaction@(importResult.Value.Imported == 1 ? "" : "s") imported.</strong>
+            @if (importResult.Value.Errors.Count > 0)
+            {
+                <ul class="mb-0 mt-1">
+                    @foreach (var e in importResult.Value.Errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(importError))
+    {
+        <div class="alert alert-danger">@importError</div>
+    }
+
+    <button class="btn btn-success btn-lg"
+            disabled="@(importing || bankAccountId == Guid.Empty || ValidRows.Count == 0)"
+            @onclick="DoImport">
+        @if (importing)
+        {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+        }
+        Import @ValidRows.Count transaction@(ValidRows.Count == 1 ? "" : "s")
+    </button>
+}
+
+@code {
+    // ── Auth ──────────────────────────────────────────────────────────────────
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+    private string userId = "";
+
+    // ── Account lists ─────────────────────────────────────────────────────────
+    private List<AccountOptionDto> fromAccounts = [];
+    private List<AccountOptionDto> toAccounts   = [];
+    private List<AccountOptionDto> stockAccounts = [];
+
+    // ── Selected accounts ─────────────────────────────────────────────────────
+    private Guid bankAccountId   = Guid.Empty;
+    private Guid inflowAccountId = Guid.Empty;
+    private Guid outflowAccountId = Guid.Empty;
+
+    // ── Parse state ───────────────────────────────────────────────────────────
+    private string? csvText;
+    private CsvParseResult? parseResult;
+    private CsvColumnMapping mapping = new();
+    private string? fileError;
+
+    private sealed class RowState
+    {
+        public required CsvPreviewRow Row { get; set; }
+        public bool Skip { get; set; }
+    }
+    private List<RowState> rowStates = [];
+
+    private List<RowState> ValidRows =>
+        rowStates.Where(r => !r.Skip && r.Row.ParseError is null && r.Row.Amount != 0).ToList();
+    private int ErrorRowCount => rowStates.Count(r => r.Row.ParseError is not null);
+    private int ZeroRowCount  => rowStates.Count(r => r.Row.ParseError is null && r.Row.Amount == 0);
+
+    // ── Import state ──────────────────────────────────────────────────────────
+    private bool importing;
+    private string? importError;
+    private (int Imported, List<string> Errors)? importResult;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        fromAccounts  = await FlowService.GetFromAccountOptionsAsync(userId);
+        toAccounts    = await FlowService.GetToAccountOptionsAsync(userId);
+
+        var allOptions = fromAccounts.Union(toAccounts).DistinctBy(a => a.Id).ToList();
+        stockAccounts  = allOptions
+            .Where(a => a.Type is PlanToSave.Domain.Enums.AccountType.Checking
+                               or PlanToSave.Domain.Enums.AccountType.Savings
+                               or PlanToSave.Domain.Enums.AccountType.Credit
+                               or PlanToSave.Domain.Enums.AccountType.Investment)
+            .OrderBy(a => a.Name).ToList();
+
+        // Sensible defaults: first income account as inflow, first expense as outflow
+        inflowAccountId  = fromAccounts.FirstOrDefault(
+            a => a.Type == PlanToSave.Domain.Enums.AccountType.Income)?.Id ?? Guid.Empty;
+        outflowAccountId = toAccounts.FirstOrDefault(
+            a => a.Type == PlanToSave.Domain.Enums.AccountType.Expense)?.Id ?? Guid.Empty;
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        fileError     = null;
+        parseResult   = null;
+        csvText       = null;
+        importResult  = null;
+        importError   = null;
+
+        var file = e.File;
+        if (file.Size > 2 * 1024 * 1024)
+        {
+            fileError = "File is too large (max 2 MB).";
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(2 * 1024 * 1024);
+            using var reader = new System.IO.StreamReader(stream,
+                detectEncodingFromByteOrderMarks: true,
+                bufferSize: 65536);
+            csvText = await reader.ReadToEndAsync();
+        }
+        catch (Exception ex)
+        {
+            fileError = $"Could not read file: {ex.Message}";
+            return;
+        }
+
+        var result   = CsvParser.Parse(csvText);
+        mapping      = result.SuggestedMapping;
+        parseResult  = result;
+        BuildRowStates(result);
+    }
+
+    private void Reparse()
+    {
+        if (csvText is null) return;
+        var result = CsvParser.Parse(csvText, mapping);
+        parseResult = result;
+        BuildRowStates(result);
+    }
+
+    private void BuildRowStates(CsvParseResult result)
+    {
+        rowStates = result.PreviewRows
+            .Select(r => new RowState
+            {
+                Row  = r,
+                // Auto-skip rows that have errors or zero amount
+                Skip = r.ParseError is not null || r.Amount == 0,
+            })
+            .ToList();
+    }
+
+    private async Task DoImport()
+    {
+        importError  = null;
+        importResult = null;
+
+        if (bankAccountId == Guid.Empty)
+        {
+            importError = "Please select the bank account for this statement.";
+            return;
+        }
+
+        var rows = new List<BulkImportRowDto>();
+
+        foreach (var state in rowStates.Where(r => !r.Skip && r.Row.ParseError is null))
+        {
+            var row = state.Row;
+            if (row.Date is null || row.Amount is null || row.Amount == 0) continue;
+
+            Guid fromId, toId;
+            decimal absAmount = Math.Abs(row.Amount.Value);
+
+            if (row.Amount > 0)
+            {
+                // Deposit: inflow source → bank account
+                fromId = inflowAccountId != Guid.Empty ? inflowAccountId : bankAccountId;
+                toId   = bankAccountId;
+            }
+            else
+            {
+                // Withdrawal: bank account → outflow destination
+                fromId = bankAccountId;
+                toId   = outflowAccountId != Guid.Empty ? outflowAccountId : bankAccountId;
+            }
+
+            if (fromId == toId) continue; // skip if same account
+
+            rows.Add(new BulkImportRowDto(row.Date.Value, absAmount, row.Description, fromId, toId));
+        }
+
+        if (rows.Count == 0)
+        {
+            importError = "No valid rows to import. Check that accounts are selected and rows are not skipped.";
+            return;
+        }
+
+        importing = true;
+        try
+        {
+            importResult = await FlowService.BulkImportAsync(userId, rows);
+        }
+        catch (Exception ex)
+        {
+            importError = $"Import failed: {ex.Message}";
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+}

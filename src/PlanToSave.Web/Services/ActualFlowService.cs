@@ -101,6 +101,66 @@ public class ActualFlowService(ApplicationDbContext db) : IActualFlowService
         await db.SaveChangesAsync();
     }
 
+    public async Task<(int Imported, List<string> Errors)> BulkImportAsync(
+        string userId, List<BulkImportRowDto> rows)
+    {
+        var errors = new List<string>();
+
+        // Validate all referenced accounts in a single query
+        var allAccountIds = rows
+            .SelectMany(r => new[] { r.FromAccountId, r.ToAccountId })
+            .Distinct()
+            .ToList();
+
+        var validAccounts = await db.Accounts
+            .Where(a => a.UserId == userId && allAccountIds.Contains(a.Id))
+            .ToDictionaryAsync(a => a.Id, a => a);
+
+        var toInsert = new List<ActualFlow>(rows.Count);
+
+        for (int i = 0; i < rows.Count; i++)
+        {
+            var row = rows[i];
+            var rowLabel = $"Row {i + 1} ({row.Date:yyyy-MM-dd}): ";
+
+            if (!validAccounts.TryGetValue(row.FromAccountId, out var fromAcc))
+            { errors.Add(rowLabel + "From account not found."); continue; }
+
+            if (!validAccounts.TryGetValue(row.ToAccountId, out var toAcc))
+            { errors.Add(rowLabel + "To account not found."); continue; }
+
+            if (fromAcc.Type == AccountType.Expense)
+            { errors.Add(rowLabel + "Expense accounts cannot be a flow source."); continue; }
+
+            if (toAcc.Type == AccountType.Income)
+            { errors.Add(rowLabel + "Income accounts cannot be a flow destination."); continue; }
+
+            if (row.FromAccountId == row.ToAccountId)
+            { errors.Add(rowLabel + "From and To accounts must be different."); continue; }
+
+            toInsert.Add(new ActualFlow
+            {
+                Id            = Guid.NewGuid(),
+                UserId        = userId,
+                FromAccountId = row.FromAccountId,
+                ToAccountId   = row.ToAccountId,
+                Amount        = row.Amount,
+                Date          = row.Date,
+                Description   = string.IsNullOrWhiteSpace(row.Description)
+                                    ? null : row.Description.Trim(),
+                CreatedAt     = DateTime.UtcNow
+            });
+        }
+
+        if (toInsert.Count > 0)
+        {
+            db.ActualFlows.AddRange(toInsert);
+            await db.SaveChangesAsync();
+        }
+
+        return (toInsert.Count, errors);
+    }
+
     private static ActualFlowDto ToDto(ActualFlow f) => new(
         f.Id,
         f.FromAccountId, f.FromAccount.Name, f.FromAccount.Type,

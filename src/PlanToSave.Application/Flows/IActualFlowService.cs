@@ -14,4 +14,11 @@ public interface IActualFlowService
     Task<Guid> CreateAsync(string userId, CreateActualFlowDto dto);
 
     Task DeleteAsync(Guid id, string userId);
+
+    /// <summary>
+    /// Inserts multiple pre-validated flows in a single transaction.
+    /// Returns the count of successfully inserted rows and any per-row errors.
+    /// </summary>
+    Task<(int Imported, List<string> Errors)> BulkImportAsync(
+        string userId, List<BulkImportRowDto> rows);
 }
