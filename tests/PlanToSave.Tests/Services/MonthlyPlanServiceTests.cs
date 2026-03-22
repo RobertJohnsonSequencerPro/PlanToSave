@@ -406,4 +406,185 @@ public class MonthlyPlanServiceTests
         await db.SaveChangesAsync();
         return (income, savings, plan);
     }
+
+    // ── GenerateGoalScheduleAsync ─────────────────────────────────────
+
+    [Fact]
+    public async Task GenerateGoalScheduleAsync_CreatesOneFlowPerMonth()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var income  = SeedAccount(db, "user-1", "Income",  AccountType.Income);
+        var savings = SeedAccount(db, "user-1", "Savings", AccountType.Savings);
+        var goal = new Goal
+        {
+            Id = Guid.NewGuid(), UserId = "user-1", Name = "Emergency Fund",
+            TargetAccountId = savings.Id, TargetAmount = 10_000m,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Goals.Add(goal);
+        await db.SaveChangesAsync();
+
+        var svc = new MonthlyPlanService(db);
+        var count = await svc.GenerateGoalScheduleAsync("user-1", new GenerateGoalScheduleDto
+        {
+            GoalId = goal.Id,
+            FromAccountId = income.Id,
+            ToAccountId = savings.Id,
+            MonthlyAmount = 500m,
+            StartYear = 2025,
+            StartMonth = 1,
+            EndYear = 2025,
+            EndMonth = 3
+        });
+
+        Assert.Equal(3, count);
+        Assert.Equal(3, db.PlannedFlows.Count());
+        Assert.All(db.PlannedFlows, pf => Assert.Equal(500m, pf.Amount));
+        Assert.All(db.PlannedFlows, pf => Assert.Equal(goal.Id, pf.GoalId));
+    }
+
+    [Fact]
+    public async Task GenerateGoalScheduleAsync_CreatesMonthlyPlans_WhenTheyDoNotExist()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var income  = SeedAccount(db, "user-1", "Income",  AccountType.Income);
+        var savings = SeedAccount(db, "user-1", "Savings", AccountType.Savings);
+        var goal = new Goal
+        {
+            Id = Guid.NewGuid(), UserId = "user-1", Name = "Vacation Fund",
+            TargetAccountId = savings.Id, TargetAmount = 2_000m,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Goals.Add(goal);
+        await db.SaveChangesAsync();
+
+        var svc = new MonthlyPlanService(db);
+        await svc.GenerateGoalScheduleAsync("user-1", new GenerateGoalScheduleDto
+        {
+            GoalId = goal.Id,
+            FromAccountId = income.Id,
+            ToAccountId = savings.Id,
+            MonthlyAmount = 200m,
+            StartYear = 2025,
+            StartMonth = 6,
+            EndYear = 2025,
+            EndMonth = 7
+        });
+
+        // Two monthly plans must have been auto-created
+        Assert.Equal(2, db.MonthlyPlans.Count());
+    }
+
+    [Fact]
+    public async Task GenerateGoalScheduleAsync_ReplacesExistingFlows_WhenReplaceExistingIsTrue()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var income  = SeedAccount(db, "user-1", "Income",  AccountType.Income);
+        var savings = SeedAccount(db, "user-1", "Savings", AccountType.Savings);
+        var goal = new Goal
+        {
+            Id = Guid.NewGuid(), UserId = "user-1", Name = "Savings Goal",
+            TargetAccountId = savings.Id, TargetAmount = 5_000m,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Goals.Add(goal);
+        await db.SaveChangesAsync();
+
+        var svc = new MonthlyPlanService(db);
+        // First schedule: 3 months
+        await svc.GenerateGoalScheduleAsync("user-1", new GenerateGoalScheduleDto
+        {
+            GoalId = goal.Id,
+            FromAccountId = income.Id,
+            ToAccountId = savings.Id,
+            MonthlyAmount = 100m,
+            StartYear = 2025, StartMonth = 1,
+            EndYear = 2025,   EndMonth = 3,
+            ReplaceExisting = true
+        });
+
+        // Re-generate with ReplaceExisting = true: 2 months replacing 3
+        await svc.GenerateGoalScheduleAsync("user-1", new GenerateGoalScheduleDto
+        {
+            GoalId = goal.Id,
+            FromAccountId = income.Id,
+            ToAccountId = savings.Id,
+            MonthlyAmount = 200m,
+            StartYear = 2025, StartMonth = 4,
+            EndYear = 2025,   EndMonth = 5,
+            ReplaceExisting = true
+        });
+
+        // Old 3 flows replaced; 2 new flows
+        var flows = db.PlannedFlows.Where(pf => pf.GoalId == goal.Id).ToList();
+        Assert.Equal(2, flows.Count);
+        Assert.All(flows, pf => Assert.Equal(200m, pf.Amount));
+    }
+
+    [Fact]
+    public async Task GenerateGoalScheduleAsync_Throws_WhenGoalNotFound()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var income  = SeedAccount(db, "user-1", "Income",  AccountType.Income);
+        var savings = SeedAccount(db, "user-1", "Savings", AccountType.Savings);
+        await db.SaveChangesAsync();
+
+        var svc = new MonthlyPlanService(db);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.GenerateGoalScheduleAsync("user-1", new GenerateGoalScheduleDto
+            {
+                GoalId = Guid.NewGuid(),
+                FromAccountId = income.Id,
+                ToAccountId = savings.Id,
+                MonthlyAmount = 100m,
+                StartYear = 2025, StartMonth = 1,
+                EndYear = 2025,   EndMonth = 1
+            }));
+    }
+
+    // ── GetGoalContributionsForMonthAsync ─────────────────────────────
+
+    [Fact]
+    public async Task GetGoalContributionsForMonthAsync_ReturnsContributionsForMonth()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var income  = SeedAccount(db, "user-1", "Income",  AccountType.Income);
+        var savings = SeedAccount(db, "user-1", "Savings", AccountType.Savings);
+        var goal = new Goal
+        {
+            Id = Guid.NewGuid(), UserId = "user-1", Name = "Dream Fund",
+            TargetAccountId = savings.Id, TargetAmount = 3_000m,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Goals.Add(goal);
+        await db.SaveChangesAsync();
+
+        var svc = new MonthlyPlanService(db);
+        await svc.GenerateGoalScheduleAsync("user-1", new GenerateGoalScheduleDto
+        {
+            GoalId = goal.Id,
+            FromAccountId = income.Id,
+            ToAccountId = savings.Id,
+            MonthlyAmount = 250m,
+            StartYear = 2025, StartMonth = 2,
+            EndYear = 2025,   EndMonth = 2
+        });
+
+        var contributions = await svc.GetGoalContributionsForMonthAsync("user-1", 2025, 2);
+
+        Assert.Single(contributions);
+        Assert.Equal(goal.Id, contributions[0].GoalId);
+        Assert.Equal(250m, contributions[0].Amount);
+    }
+
+    [Fact]
+    public async Task GetGoalContributionsForMonthAsync_ReturnsEmpty_ForMonthWithNoGoalFlows()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var svc = new MonthlyPlanService(db);
+
+        var contributions = await svc.GetGoalContributionsForMonthAsync("user-1", 2025, 1);
+
+        Assert.Empty(contributions);
+    }
 }
