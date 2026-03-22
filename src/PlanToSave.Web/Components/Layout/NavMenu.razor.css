@@ -27,7 +27,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.85);
     border-bottom: 1px solid rgba(255,255,255,0.07);
     margin-bottom: 6px;
     flex-shrink: 0;
@@ -36,7 +36,7 @@
 }
 
 .rail-logo:hover {
-    color: rgba(255,255,255,0.9);
+    color: #fff;
 }
 
 .rail-nav {
@@ -76,7 +76,7 @@
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    color: rgba(255,255,255,0.95);
+    color: #fff;
     transition: background 0.13s, color 0.13s;
     text-decoration: none !important;
 }
@@ -129,7 +129,7 @@
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    color: rgba(255,255,255,0.95);
+    color: #fff;
     background: none;
     border: none;
     cursor: pointer;

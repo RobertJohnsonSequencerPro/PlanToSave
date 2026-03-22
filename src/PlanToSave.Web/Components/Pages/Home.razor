@@ -47,7 +47,7 @@ else
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-semibold">@goal.Name</span>
-                                <span class="text-muted small">@pct%</span>
+                                <span class="small">@pct%</span>
                             </div>
                             @if (!string.IsNullOrWhiteSpace(goal.IdeaTitle))
                             {
@@ -62,7 +62,7 @@ else
                                 <div class="progress-bar @barClass" style="width:@pct%"
                                      role="progressbar" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            <div class="d-flex justify-content-between text-muted small">
+                            <div class="d-flex justify-content-between small">
                                 <span>@FormatCurrency(goal.SavedAmount) / @FormatCurrency(goal.TargetAmount)</span>
                                 <span class="@(daysLeft < 0 ? "text-danger" : daysLeft < 30 ? "text-warning" : "")">
                                     @(daysLeft < 0 ? Math.Abs(daysLeft) + "d overdue" : daysLeft + "d left")
@@ -93,7 +93,7 @@ else
         var netWorth = balances.Sum(b => b.Balance);
         <div class="card mb-4 border-0 bg-dark text-white">
             <div class="card-body py-3">
-                <div class="small text-white-50 text-uppercase fw-semibold mb-1">Net Worth</div>
+                <div class="small text-white text-uppercase fw-semibold mb-1">Net Worth</div>
                 <div class="fs-2 fw-bold @(netWorth >= 0 ? "" : "text-danger")">
                     @FormatCurrency(netWorth)
                 </div>
@@ -112,19 +112,19 @@ else
             <div class="row g-3 mb-4">
                 <div class="col-4">
                     <div class="card text-center h-100 py-2">
-                        <div class="text-muted small mb-1">Planned</div>
+                        <div class="small mb-1 text-uppercase fw-semibold text-muted-label">Planned</div>
                         <div class="fs-5 fw-bold">@FormatCurrency(planned)</div>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="card text-center h-100 py-2">
-                        <div class="text-muted small mb-1">Actual</div>
+                        <div class="small mb-1 text-uppercase fw-semibold text-muted-label">Actual</div>
                         <div class="fs-5 fw-bold">@FormatCurrency(actual)</div>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="card text-center h-100 py-2">
-                        <div class="text-muted small mb-1">Variance</div>
+                        <div class="small mb-1 text-uppercase fw-semibold text-muted-label">Variance</div>
                         <div class="fs-5 fw-bold @varClass">@(varSign + FormatCurrency(variance))</div>
                     </div>
                 </div>
@@ -175,7 +175,7 @@ else
                                     </div>
                                     <div class="d-flex justify-content-between mt-1 small text-muted">
                                         <span>@sparkData.First().Date.ToString("MMM yy")</span>
-                                        <span class="text-muted small">
+                                        <span class="small">
                                             <svg width="10" height="6">
                                                 <line x1="0" y1="3" x2="10" y2="3" stroke="#1b6ec2" stroke-width="1.5" stroke-linecap="round"/>
                                             </svg>

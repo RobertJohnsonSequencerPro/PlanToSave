@@ -151,7 +151,7 @@ else
                     {
                         var flowLabel = flow.Description ?? (flow.FromAccountName + " → " + flow.ToAccountName);
                         <tr>
-                            <td class="text-nowrap text-muted small">@flow.Date.ToString("MMM d, yyyy")</td>
+                            <td class="text-nowrap small">@flow.Date.ToString("MMM d, yyyy")</td>
                             <td>
                                 <span class="badge @GetTypeBadgeClass(flow.FromAccountType) me-1">@flow.FromAccountType</span>
                                 @flow.FromAccountName

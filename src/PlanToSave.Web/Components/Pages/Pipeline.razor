@@ -471,6 +471,13 @@ else
         margin-bottom: .5rem;
     }
 
+    /* ── Dark mode: make all stage text stark white ─────────────────────── */
+    [data-theme="dark"] .stage-tagline    { color: #fff; }
+    [data-theme="dark"] .stage-count-label { color: #fff; }
+    [data-theme="dark"] .stage-item-meta  { color: rgba(255,255,255,0.85); }
+    [data-theme="dark"] .stage-empty      { color: #fff; }
+    [data-theme="dark"] .stage-list-more  { color: rgba(255,255,255,0.6); }
+
     /* ── Mobile responsive: arrows become down-arrows, cards full-width ─ */
     @@media (max-width: 767px) {
         .stage-card {

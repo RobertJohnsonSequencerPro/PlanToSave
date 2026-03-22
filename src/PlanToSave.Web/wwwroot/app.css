@@ -98,6 +98,12 @@ h1:focus {
     color: #5a6472 !important;
 }
 
+/* Label above a KPI value (e.g. "Planned", "Actual", "Variance" in summary cards).
+   Muted in light mode for hierarchy; stark white in dark mode so it's readable. */
+.text-muted-label {
+    color: #5a6472;
+}
+
 /* text-warning: #ffc107 on white = 1.07:1  →  #92400e = 9.3:1 */
 .text-warning {
     color: #92400e !important;
@@ -157,6 +163,7 @@ h1:focus {
 
 /* ── Text utilities ──────────────────────────────────────── */
 [data-theme="dark"] .text-muted     { color: rgba(255,255,255,0.6) !important; }
+[data-theme="dark"] .text-muted-label { color: #fff; }
 [data-theme="dark"] .text-dark      { color: #ffffff !important; }
 [data-theme="dark"] .text-body      { color: #ffffff !important; }
 [data-theme="dark"] .text-secondary { color: rgba(255,255,255,0.6) !important; }

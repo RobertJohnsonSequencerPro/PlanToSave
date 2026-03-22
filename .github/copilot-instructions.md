@@ -480,7 +480,9 @@ Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no
 
 #### Light Mode
 
-> **Rule: all primary/readable text must be `#000` in light mode and `#fff` in dark mode. Never render body copy, table cells, labels, or headings in gray. Gray (`text-muted`) is reserved exclusively for supplemental, secondary, or decorative text (captions, subtitles, placeholder hints). If text needs to be readable, it must be black/white.**
+> **Rule: all primary/readable text must be `#000` in light mode and `#fff` in dark mode. Never render body copy, table cells, labels, dates, amounts, or headings in gray. Use `.text-muted` only for truly supplemental or decorative text — form hints, `(optional)` field markers, placeholder hints, and loading states. If the user actively needs to read it, it must be black in light mode and stark white in dark mode.**
+
+> **Dark mode stark-white rule: in dark mode, ALL readable text must be stark white (`#fff`). `.text-muted` / `rgba(255,255,255,0.6)` is reserved for: form hints, optional markers, truly secondary captions, and placeholder/disabled states only. Never apply `text-muted` to: dates in tables, amounts, KPI labels ("Planned", "Actual", "Variance"), stage taglines, count labels, or any text that carries meaning the user must act on. For KPI card labels that need visual hierarchy in light mode but must be white in dark mode, use the `.text-muted-label` custom class (gray in light mode, `#fff` in dark mode).**
 
 | Role | Hex | Notes |
 |------|-----|-------|
@@ -520,8 +522,9 @@ Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no
 
 | Role | Value | Notes |
 |------|-------|-------|
-| Primary text | `#fff` | All body copy, labels, table cells |
-| Secondary / muted | `rgba(255,255,255,0.6)` | `.text-muted`, `.text-secondary`, `--bs-secondary-color` |
+| Primary text | `#fff` | All body copy, labels, table cells, dates, amounts |
+| Secondary / muted | `rgba(255,255,255,0.6)` | `.text-muted` — form hints, optional markers, placeholder text, loading states ONLY |
+| KPI card label | `#fff` | Use `.text-muted-label` (gray in light mode, white in dark mode) |
 | Link / `.btn-link` | `rgba(255,255,255,0.85)` | Hover → `#fff` |
 | Placeholder / disabled text | `#7a8da0` | Inputs placeholder and disabled state |
 | `.text-warning` | `#fcd34d` | 9.7:1 on page background |
@@ -544,9 +547,9 @@ Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no
 | Role | Value |
 |------|-------|
 | Rail background | `#111` |
-| Icon default | `rgba(255,255,255,0.95)` |
+| Icon default | `#fff` |
 | Icon hover / active | `#fff` / `#fff` |
-| Logo icon | `rgba(255,255,255,0.55)`, hover `rgba(255,255,255,0.90)` |
+| Logo icon | `rgba(255,255,255,0.85)`, hover `#fff` |
 | Section label | `rgba(255,255,255,0.38)` |
 | Section divider | `rgba(255,255,255,0.10)` |
 
