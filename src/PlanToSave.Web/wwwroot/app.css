@@ -235,11 +235,18 @@ h1:focus {
     color: #ffffff !important;
     border-color: #3a4258 !important;
 }
+/* ── Sticky thead needs opaque background for scroll compositing ── */
+[data-theme="dark"] thead.sticky-top,
+[data-theme="dark"] thead.table-light {
+    background-color: #252c3d !important;
+    color: #ffffff !important;
+}
 /* ── Table row variant overrides (used in import preview: error, duplicate, zero) ── */
 [data-theme="dark"] .table-danger {
     --bs-table-bg: #3d1f23;
     --bs-table-color: #ffffff;
     --bs-table-border-color: #6b2a32;
+    --bs-table-hover-bg: rgba(255,255,255,0.05);
 }
 [data-theme="dark"] .table-danger > td,
 [data-theme="dark"] .table-danger > th {
@@ -251,6 +258,7 @@ h1:focus {
     --bs-table-bg: #3d2f10;
     --bs-table-color: #ffffff;
     --bs-table-border-color: #6b4f18;
+    --bs-table-hover-bg: rgba(255,255,255,0.05);
 }
 [data-theme="dark"] .table-warning > td,
 [data-theme="dark"] .table-warning > th {
@@ -262,6 +270,7 @@ h1:focus {
     --bs-table-bg: #252c3d;
     --bs-table-color: rgba(255,255,255,0.6);
     --bs-table-border-color: #3a4258;
+    --bs-table-hover-bg: rgba(255,255,255,0.05);
 }
 [data-theme="dark"] .table-secondary > td,
 [data-theme="dark"] .table-secondary > th {
