@@ -544,8 +544,8 @@ Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no
 | Role | Value |
 |------|-------|
 | Rail background | `#111` |
-| Icon default | `rgba(255,255,255,0.70)` |
-| Icon hover / active | `rgba(255,255,255,0.95)` / `#fff` |
+| Icon default | `rgba(255,255,255,0.95)` |
+| Icon hover / active | `#fff` / `#fff` |
 | Logo icon | `rgba(255,255,255,0.55)`, hover `rgba(255,255,255,0.90)` |
 | Section label | `rgba(255,255,255,0.38)` |
 | Section divider | `rgba(255,255,255,0.10)` |
