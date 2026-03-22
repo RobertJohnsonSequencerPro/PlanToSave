@@ -162,7 +162,7 @@ else
                                 @flow.ToAccountName
                             </td>
                             <td class="text-end fw-semibold text-success">@flow.Amount.ToString("C")</td>
-                            <td class="text-muted small">@(flow.Description ?? "—")</td>
+                            <td class="small">@(flow.Description ?? "—")</td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-danger" title="Delete" aria-label="Delete flow"
                                         @onclick="() => DeleteFlow(flow.Id, flowLabel)">

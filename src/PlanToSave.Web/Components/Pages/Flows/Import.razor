@@ -226,13 +226,13 @@
                                        disabled="@(hasError || isZero)"
                                        @onchange="e => state.Skip = !(bool)(e.Value ?? false)" />
                             </td>
-                            <td class="text-nowrap text-muted">
+                            <td class="text-nowrap">
                                 @(row.Date?.ToString("MMM d, yyyy") ?? "—")
                             </td>
                             <td class="text-end fw-semibold @(isCredit ? "text-success" : (row.Amount < 0 ? "text-danger" : ""))">
                                 @(row.Amount.HasValue ? row.Amount.Value.ToString("C") : "—")
                             </td>
-                            <td class="text-muted" style="font-size:.8rem">
+                            <td style="font-size:.8rem">
                                 @if (!hasError && row.Amount.HasValue)
                                 {
                                     if (isCredit)
@@ -270,7 +270,7 @@
                                     </div>
                                 }
                             </td>
-                            <td class="text-muted">@(row.Description ?? "—")</td>
+                            <td>@(row.Description ?? "—")</td>
                             <td class="small">
                                 @if (row.ParseError is not null)
                                 {
