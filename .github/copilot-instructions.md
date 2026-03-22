@@ -244,6 +244,7 @@ Rules:
 - Muted secondary data: `text-muted small`
 - Totals footer: `<tfoot>` with `fw-semibold` — use `table-light` only on `<tfoot>`
 - Action column: empty `<th>`, right-aligned `<td class="text-end">`
+- **High-contrast row variants**: Bootstrap's `table-danger`, `table-warning`, `table-secondary`, and `table-light` all render with light backgrounds. Every use of these classes requires a corresponding `[data-theme="dark"]` override in `app.css` to ensure text remains readable (white on dark surface). The dark mode mappings are: `table-danger` → `#3d1f23` bg / `#6b2a32` border; `table-warning` → `#3d2f10` bg / `#6b4f18` border; `table-secondary` / `table-light` → `#252c3d` bg / `#3a4258` border. Text color is always `#fff` (or `rgba(255,255,255,0.6)` for de-emphasised secondary rows).
 
 ---
 
