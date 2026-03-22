@@ -52,7 +52,7 @@ else
                             <tr>
                                 <td class="fw-semibold">@account.Name</td>
                                 <td><span class="badge @GetTypeBadgeClass(account.Type)">@account.Type</span></td>
-                                <td class="text-muted small">@(account.Description ?? "—")</td>
+                                <td class="small">@(account.Description ?? "—")</td>
                                 <td class="text-end">
                                     <button class="btn btn-sm @(isReconciling ? "btn-secondary" : "btn-primary") me-1"
                                             @onclick="() => ToggleReconcile(account.Id)">
@@ -151,7 +151,7 @@ else
                             <tr>
                                 <td class="fw-semibold">@account.Name</td>
                                 <td><span class="badge @GetTypeBadgeClass(account.Type)">@account.Type</span></td>
-                                <td class="text-muted small">@(account.Description ?? "—")</td>
+                                <td class="small">@(account.Description ?? "—")</td>
                                 <td class="text-end">
                                     <a href="/accounts/@account.Id/edit" class="btn btn-sm btn-secondary me-1">Edit</a>
                                     <button class="btn btn-sm btn-danger"
