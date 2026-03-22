@@ -98,9 +98,9 @@
 .rail-nav ::deep a.nav-icon-ideas.active { color: #ffc107; }
 
 /* Goals → blue   (Stage 2) */
-.rail-nav ::deep a.nav-icon-goals { color: rgba(110, 168, 254, 0.72); }
+.rail-nav ::deep a.nav-icon-goals { color: rgba(13, 110, 253, 0.72); }
 .rail-nav ::deep a.nav-icon-goals:hover,
-.rail-nav ::deep a.nav-icon-goals.active { color: #6ea8fe; }
+.rail-nav ::deep a.nav-icon-goals.active { color: #0d6efd; }
 
 /* Calendar → teal/cyan  (Stage 3 — Budgeted) */
 .rail-nav ::deep a.nav-icon-calendar { color: rgba(13, 202, 240, 0.72); }
