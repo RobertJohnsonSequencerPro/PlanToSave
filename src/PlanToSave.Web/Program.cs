@@ -97,6 +97,7 @@ builder.Services.AddScoped<IActivityPlanService, ActivityPlanService>();
 builder.Services.AddScoped<IActivityReviewService, ActivityReviewService>();
 builder.Services.AddScoped<ICalendarEventService, CalendarEventService>();
 builder.Services.AddScoped<CsvImportService>();
+builder.Services.AddScoped<INewUserSeedService, NewUserSeedService>();
 
 var app = builder.Build();
 

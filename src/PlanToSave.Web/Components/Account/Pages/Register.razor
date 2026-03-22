@@ -14,6 +14,7 @@
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject PlanToSave.Application.Accounts.INewUserSeedService NewUserSeedService
 
 <PageTitle>Register</PageTitle>
 
@@ -83,6 +84,8 @@
         Logger.LogInformation("User created a new account with password.");
 
         var userId = await UserManager.GetUserIdAsync(user);
+        try { await NewUserSeedService.SeedAsync(userId); }
+        catch (Exception ex) { Logger.LogError(ex, "Failed to seed starter accounts for new user {UserId}.", userId); }
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
         var callbackUrl = NavigationManager.GetUriWithQueryParameters(
