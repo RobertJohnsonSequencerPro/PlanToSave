@@ -30,13 +30,13 @@ else
                 <button class="btn btn-secondary btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Closed)">
                     Close Plan
                 </button>
-                <button class="btn btn-outline-warning btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Draft)">
+                <button class="btn btn-warning btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Draft)">
                     Revert to Draft
                 </button>
             }
             else if (plan.Status == MonthlyPlanStatus.Closed)
             {
-                <button class="btn btn-outline-secondary btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Active)">
+                <button class="btn btn-secondary btn-sm" @onclick="() => SetStatus(MonthlyPlanStatus.Active)">
                     Re-open
                 </button>
             }
@@ -75,7 +75,7 @@ else
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="h5 mb-0">Planned Transactions</h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" @onclick="SeedTemplates" title="Add all active recurring templates">
+            <button class="btn btn-secondary" @onclick="SeedTemplates" title="Add all active recurring templates">
                 Seed from Templates
             </button>
             <button class="btn btn-primary" @onclick="ToggleAddForm">
@@ -155,14 +155,17 @@ else
 
     @if (plan.PlannedFlows.Count == 0)
     {
-        <div class="card text-center py-4 text-muted">
-            No planned transactions yet. Add a transaction or seed from templates.
+        <div class="card text-center py-4">
+            <div class="card-body text-muted">
+                <p class="mb-1 fw-semibold">No transactions yet.</p>
+                <p class="mb-0 small">Add a transaction or seed from templates.</p>
+            </div>
         </div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table table-sm align-middle">
+            <table class="table table-sm table-hover align-middle mb-0">
                 <thead>
                     <tr class="small text-uppercase text-muted">
                         <th>From</th>
@@ -193,7 +196,7 @@ else
                                 @(pf.Description ?? "—")
                                 @if (!string.IsNullOrWhiteSpace(pf.ActivityTitle))
                                 {
-                                    <div class="small text-primary mt-1">
+                                    <div class="small linked-activity mt-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="me-1" viewBox="0 0 16 16">
                                             <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
                                         </svg>
@@ -307,9 +310,9 @@ else
 
     private static string StatusBadgeClass(MonthlyPlanStatus status) => status switch
     {
-        MonthlyPlanStatus.Active => "bg-success",
-        MonthlyPlanStatus.Closed => "bg-secondary",
-        _ => "bg-warning text-dark"
+        MonthlyPlanStatus.Active => "bg-primary",
+        MonthlyPlanStatus.Closed => "bg-success",
+        _ => "bg-secondary"
     };
 
     private static string GetTypeBadgeClass(AccountType type) => type switch

@@ -5,3 +5,5 @@
 .reconcile-amount-input {
     width: 140px;
 }
+
+.reconcile-note-wrapper { min-width: 200px; }

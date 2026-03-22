@@ -1,0 +1,8 @@
+/* Icon in the h1 page title — blue in light mode, white in dark mode */
+.icon-accent {
+    color: #1b6ec2;
+}
+
+[data-theme="dark"] .icon-accent {
+    color: #fff !important;
+}

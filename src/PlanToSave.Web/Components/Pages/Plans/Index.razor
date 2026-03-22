@@ -29,7 +29,7 @@ else if (plans.Count == 0)
 else
 {
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr class="small text-uppercase text-muted">
                     <th>Month</th>
@@ -93,8 +93,8 @@ else
 
     private static string StatusBadgeClass(MonthlyPlanStatus status) => status switch
     {
-        MonthlyPlanStatus.Active => "bg-success",
-        MonthlyPlanStatus.Closed => "bg-secondary",
-        _ => "bg-warning text-dark"
+        MonthlyPlanStatus.Active => "bg-primary",
+        MonthlyPlanStatus.Closed => "bg-success",
+        _ => "bg-secondary"
     };
 }

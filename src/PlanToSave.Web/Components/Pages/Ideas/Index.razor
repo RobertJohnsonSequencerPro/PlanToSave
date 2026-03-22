@@ -131,7 +131,7 @@
         <div class="row g-2 align-items-end">
             <div class="col-auto">
                 <label class="form-label small mb-1">Category</label>
-                <select class="form-select form-select-sm" style="min-width:120px" @bind="filterCategory">
+                <select class="form-select form-select-sm filter-select-category" @bind="filterCategory">
                     <option value="">All</option>
                     @foreach (var v in Enum.GetValues<IdeaCategory>())
                     {
@@ -141,7 +141,7 @@
             </div>
             <div class="col-auto">
                 <label class="form-label small mb-1">Energy</label>
-                <select class="form-select form-select-sm" style="min-width:100px" @bind="filterEnergy">
+                <select class="form-select form-select-sm filter-select-energy" @bind="filterEnergy">
                     <option value="">All</option>
                     @foreach (var v in Enum.GetValues<IdeaEnergyLevel>())
                     {
@@ -151,7 +151,7 @@
             </div>
             <div class="col-auto">
                 <label class="form-label small mb-1">Cost</label>
-                <select class="form-select form-select-sm" style="min-width:110px" @bind="filterCost">
+                <select class="form-select form-select-sm filter-select-cost" @bind="filterCost">
                     <option value="">All</option>
                     @foreach (var v in Enum.GetValues<IdeaCostEstimate>())
                     {
@@ -161,7 +161,7 @@
             </div>
             <div class="col-auto">
                 <label class="form-label small mb-1">Status</label>
-                <select class="form-select form-select-sm" style="min-width:110px" @bind="filterStatus">
+                <select class="form-select form-select-sm filter-select-status" @bind="filterStatus">
                     <option value="">All</option>
                     @foreach (var v in Enum.GetValues<IdeaStatus>())
                     {

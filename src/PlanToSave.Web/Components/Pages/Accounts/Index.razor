@@ -54,12 +54,12 @@ else
                                 <td><span class="badge @GetTypeBadgeClass(account.Type)">@account.Type</span></td>
                                 <td class="text-muted small">@(account.Description ?? "—")</td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm @(isReconciling ? "btn-outline-secondary" : "btn-outline-primary") me-1"
+                                    <button class="btn btn-sm @(isReconciling ? "btn-secondary" : "btn-primary") me-1"
                                             @onclick="() => ToggleReconcile(account.Id)">
                                         @(isReconciling ? "Cancel" : "Set Balance")
                                     </button>
-                                    <a href="/accounts/@account.Id/edit" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                                    <button class="btn btn-sm btn-outline-danger"
+                                    <a href="/accounts/@account.Id/edit" class="btn btn-sm btn-secondary me-1">Edit</a>
+                                    <button class="btn btn-sm btn-danger"
                                             @onclick="() => ArchiveAccount(account.Id, account.Name)">
                                         Archive
                                     </button>
@@ -78,7 +78,7 @@ else
                                                 <label class="form-label small mb-1 fw-semibold">Amount ($)</label>
                                                 <InputNumber @bind-Value="reconcileAmount" class="form-control form-control-sm reconcile-amount-input" step="0.01" />
                                             </div>
-                                            <div style="min-width:200px">
+                                            <div class="reconcile-note-wrapper">
                                                 <label class="form-label small mb-1 fw-semibold">Note <span class="fw-normal text-muted">(optional)</span></label>
                                                 <InputText @bind-Value="reconcileNote" class="form-control form-control-sm" placeholder="e.g. Bank statement" />
                                             </div>
@@ -89,7 +89,7 @@ else
                                         </div>
                                         @if (reconcileError is not null)
                                         {
-                                            <div class="text-danger small mt-1">@reconcileError</div>
+                                            <div class="alert alert-danger py-1 small mt-1">@reconcileError</div>
                                         }
                                         @if (reconcileVariance is not null)
                                         {
@@ -153,8 +153,8 @@ else
                                 <td><span class="badge @GetTypeBadgeClass(account.Type)">@account.Type</span></td>
                                 <td class="text-muted small">@(account.Description ?? "—")</td>
                                 <td class="text-end">
-                                    <a href="/accounts/@account.Id/edit" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                                    <button class="btn btn-sm btn-outline-danger"
+                                    <a href="/accounts/@account.Id/edit" class="btn btn-sm btn-secondary me-1">Edit</a>
+                                    <button class="btn btn-sm btn-danger"
                                             @onclick="() => ArchiveAccount(account.Id, account.Name)">
                                         Archive
                                     </button>

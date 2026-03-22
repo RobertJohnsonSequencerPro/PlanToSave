@@ -102,12 +102,12 @@
                         }
                         else
                         {
-                            <div class="text-danger small">End month must be the same as or after the start month.</div>
+                            <div class="alert alert-danger py-1 small mt-1">End month must be the same as or after the start month.</div>
                         }
 
                         @if (scheduleError is not null)
                         {
-                            <div class="text-danger small mt-2">@scheduleError</div>
+                            <div class="alert alert-danger py-1 small mt-1">@scheduleError</div>
                         }
                     </div>
                     <div class="modal-footer">
@@ -174,7 +174,7 @@
                         }
                         @if (accountSaveError is not null)
                         {
-                            <div class="text-danger small">@accountSaveError</div>
+                            <div class="alert alert-danger py-1 small mt-1">@accountSaveError</div>
                         }
                     </div>
                     <div class="modal-footer">

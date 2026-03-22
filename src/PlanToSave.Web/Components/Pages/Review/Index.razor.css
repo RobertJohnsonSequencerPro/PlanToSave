@@ -1,0 +1,7 @@
+.log-expense-amount { max-width: 160px; }
+.actual-cost-amount  { max-width: 200px; }
+
+.star-btn {
+    font-size: 1.2rem;
+    line-height: 1;
+}

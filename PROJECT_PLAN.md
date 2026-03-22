@@ -494,3 +494,79 @@ Violations of the UI Style Guide found across the codebase. All items below must
 ### 🟡 Delete Confirmation Message
 
 - [x] `Flows/Index.razor` — confirm message `"Delete this flow: \"{label}\"?"` → updated to `"Delete \"{label}\"? This cannot be undone."`
+
+---
+
+## Style Guide Cleanup — Round 2
+
+Second-pass audit against the updated style guide (dark-mode filled-button rule, `text-primary` breakage, status badge mapping, inline styles).
+
+### 🔴 Outline Buttons — Prefer Filled (Non–Page-Header, Non–Modal-Cancel)
+
+Rule: outline buttons are **only** allowed for (1) modal Cancel and (2) page-header secondary actions. Everything else must use a filled variant.
+
+- [x] `Accounts/Index.razor` — `btn-outline-primary` → `btn-primary` for "Set Balance" in table rows
+- [x] `Accounts/Index.razor` — `btn-outline-secondary` → `btn-secondary` for "Edit" in table rows (both stock and flow sections)
+- [x] `Accounts/Index.razor` — `btn-outline-danger` → `btn-danger` for "Archive" button (both sections)
+- [x] `Activities/Index.razor` — `btn-link text-danger` → `btn-danger` for delete plan button (wrong delete pattern; should match style guide `btn btn-sm btn-danger`)
+- [x] `Activities/Index.razor` — `btn-outline-secondary` → `btn-secondary` for "Steps" link in plan cards
+- [x] `Activities/Detail.razor` — `btn-outline-danger` → `btn-danger` for delete plan button in page header
+- [x] `Activities/Detail.razor` — `btn-outline-secondary` → `btn-secondary` for "Unlink" budget button
+- [x] `Activities/Detail.razor` — `btn-outline-primary` → `btn-primary` for "View [month] plan" link
+- [x] `Activities/Detail.razor` — `btn-outline-primary` → `btn-primary` for "+ Link to a budget line" button
+- [x] `Activities/Detail.razor` — `btn-link text-danger` → `btn-danger` for delete step buttons in checklist
+- [x] `Plans/Detail.razor` — `btn-outline-warning btn-sm` → `btn-warning btn-sm` for "Revert to Draft"
+- [x] `Plans/Detail.razor` — `btn-outline-secondary btn-sm` → `btn-secondary btn-sm` for "Re-open"
+- [x] `Plans/Detail.razor` — `btn-outline-secondary` → `btn-secondary` for "Seed from Templates" (sub-section header, not page header)
+- [x] `Review/Index.razor` — `btn-outline-secondary btn-sm` → `btn-secondary btn-sm` for "Didn't happen" in card body
+- [x] `Review/Index.razor` — `btn-outline-primary btn-sm` → `btn-outline-secondary btn-sm` for "View upcoming plans" in empty state (empty-state actions must use `btn-outline-secondary` per style guide)
+
+### 🔴 `text-primary` on Content (Dark Mode Broken)
+
+Rule: never apply Bootstrap utility classes like `text-primary` to icons or text that must be white in dark mode — Bootstrap's `!important` defeats scoped CSS overrides.
+
+- [x] `Activities/Index.razor` — `class="me-2 text-primary align-text-bottom"` on H1 SVG → replace with custom `.icon-plan` class; add light/dark override in new `Activities/Index.razor.css`
+- [x] `Activities/Index.razor` — `class="mb-3 text-primary"` on empty state SVG → `class="mb-3 text-muted"` (empty state icons should be muted)
+- [x] `Plans/Detail.razor` — `<div class="small text-primary mt-1">` on activity-plan link text inside table → replace with custom `.activity-link-label` class; add scoped override in new `Plans/Detail.razor.css`
+
+### 🔴 Status Badge Mapping Incorrect
+
+Rule: `Draft → "bg-secondary"`, `Active → "bg-primary"`, `Closed → "bg-success"`.
+
+- [x] `Plans/Index.razor` `StatusBadgeClass`: Active→`bg-success` should be `bg-primary`; Closed→`bg-secondary` should be `bg-success`; Draft→`bg-warning text-dark` should be `bg-secondary`
+- [x] `Plans/Detail.razor` `StatusBadgeClass` — same wrong mapping; fix both functions to match style guide
+
+### 🟡 Inline `style="..."` Attributes — Round 2
+
+- [x] `Accounts/Index.razor` — `style="min-width:200px"` on reconcile note field wrapper div → move to `Accounts/Index.razor.css`
+- [x] `Ideas/Index.razor` — `style="min-width:120px"`, `style="min-width:100px"`, `style="min-width:110px"` (×2) on filter dropdowns → move all four to new `Ideas/Index.razor.css`
+- [x] `Review/Index.razor` — `style="max-width:160px;"` on log-expense amount input-group → move to new `Review/Index.razor.css`
+- [x] `Review/Index.razor` — `style="max-width: 200px;"` on review actual-cost input-group → move to `Review/Index.razor.css`
+- [x] `Review/Index.razor` — `style="width: fit-content;"` on empty state action button → remove; use Bootstrap `d-inline-block` or remove the constraint entirely
+- [x] `Review/Index.razor` — `style="font-size: 1.2rem; line-height: 1;"` on star rating buttons → move to `Review/Index.razor.css`
+
+### 🟡 Error Display — `text-danger small` Instead of Alert
+
+Rule: "Never use `.text-danger` alone for error messages visible after a form submit — use the full alert".
+
+- [x] `Accounts/Index.razor` — `<div class="text-danger small mt-1">@reconcileError</div>` → `<div class="alert alert-danger py-1 small mt-2">@reconcileError</div>`
+- [x] `Goals/Index.razor` — `<div class="text-danger small mt-2">@scheduleError</div>` inside modal body → `<div class="alert alert-danger py-2 small mt-2">@scheduleError</div>`
+- [x] `Goals/Index.razor` — `<div class="text-danger small">@accountSaveError</div>` inside modal body → `<div class="alert alert-danger py-2 small">@accountSaveError</div>`
+- [x] `Activities/Detail.razor` — `<div class="text-danger small mt-1">@budgetError</div>` → `<div class="alert alert-danger py-1 small mt-1">@budgetError</div>`
+- [x] `Activities/Detail.razor` — `<div class="text-danger small mt-1">@stepError</div>` in card footer → `<div class="alert alert-danger py-1 small mt-1">@stepError</div>`
+
+### 🟡 Empty State Pattern Deviations
+
+Rule: card pattern with `text-muted` SVG icon (36×36), `<p class="mb-1 fw-semibold">` heading, `<p class="mb-0 small">` description, optional `btn btn-sm btn-outline-secondary` action.
+
+- [x] `Activities/Index.razor` — empty state SVG `class="mb-3 text-primary"` → `class="mb-3 text-muted"`; heading `<h5 class="fw-semibold mb-1">` → `<p class="mb-1 fw-semibold">`; action button full-size `btn-primary` → `btn btn-sm btn-outline-secondary`
+- [x] `Review/Index.razor` — empty state SVG `class="text-success"` (no `mb-3`) → `class="mb-3 text-muted"`; size should be `width="36" height="36"`; action button `btn-outline-primary` → `btn-outline-secondary`
+- [x] `Plans/Detail.razor` — "No planned transactions" card missing `<div class="card-body">` wrapper inside the empty state card
+
+### 🟡 Tables — Missing Bootstrap Classes
+
+Rule: base classes are `table table-hover align-middle mb-0`.
+
+- [x] `Plans/Index.razor` — `<table class="table table-hover align-middle">` → add `mb-0`
+- [x] `Plans/Detail.razor` — `<table class="table table-sm align-middle">` → add `table-hover mb-0`
+- [x] `Templates/Index.razor` — `<table class="table table-hover align-middle">` → add `mb-0`

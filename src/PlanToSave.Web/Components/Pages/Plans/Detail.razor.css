@@ -1,0 +1,8 @@
+/* Linked activity row in planned-transactions table — blue in light mode, readable in dark mode */
+.linked-activity {
+    color: #1b6ec2;
+}
+
+[data-theme="dark"] .linked-activity {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
