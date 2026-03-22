@@ -91,11 +91,11 @@ else if (templates.Count == 0)
 else
 {
     <div class="mb-3 d-flex gap-2">
-        <button class="btn btn-sm @(filterActive == null ? "btn-secondary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(filterActive == null ? "btn-primary" : "btn-secondary")"
                 @onclick="() => SetFilter(null)">All (@templates.Count)</button>
-        <button class="btn btn-sm @(filterActive == true ? "btn-success" : "btn-outline-success")"
+        <button class="btn btn-sm @(filterActive == true ? "btn-success" : "btn-secondary")"
                 @onclick="() => SetFilter(true)">Active (@templates.Count(t => t.IsActive))</button>
-        <button class="btn btn-sm @(filterActive == false ? "btn-secondary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(filterActive == false ? "btn-primary" : "btn-secondary")"
                 @onclick="() => SetFilter(false)">Inactive (@templates.Count(t => !t.IsActive))</button>
     </div>
 

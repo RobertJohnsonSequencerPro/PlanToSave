@@ -15,9 +15,9 @@
 
 @* Month navigation *@
 <div class="d-flex align-items-center justify-content-between mb-3">
-    <button class="btn btn-outline-secondary btn-sm" @onclick="PrevMonth">&#8249; Prev</button>
+    <button class="btn btn-secondary btn-sm" @onclick="PrevMonth">&#8249; Prev</button>
     <h5 class="mb-0 fw-semibold">@monthLabel</h5>
-    <button class="btn btn-outline-secondary btn-sm" @onclick="NextMonth">Next &#8250;</button>
+    <button class="btn btn-secondary btn-sm" @onclick="NextMonth">Next &#8250;</button>
 </div>
 
 @* Day-of-week headers *@
@@ -88,7 +88,7 @@ else
             <div class="card-header d-flex justify-content-between align-items-center py-2">
                 <span class="fw-semibold">@selectedDate.ToString("dddd, MMMM d, yyyy")</span>
                 <div class="d-flex gap-2 align-items-center">
-                    <button class="btn btn-outline-primary btn-sm" @onclick="ToggleAddForm">
+                    <button class="btn btn-primary btn-sm" @onclick="ToggleAddForm">
                         @(showAddForm ? "✕ Cancel" : "+ Add event")
                     </button>
                     <button type="button" class="btn-close btn-sm" @onclick="() => selectedDay = 0"
@@ -178,7 +178,7 @@ else
                         </div>
                         <div class="d-flex gap-2 align-items-center">
                             <AddToCalendarButton Title="@ce.Title" Date="@ce.Date" Notes="@ce.Notes" />
-                            <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteCustomEvent(ce.Id)"
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteCustomEvent(ce.Id)"
                                     title="Delete event" aria-label="Delete event">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                     <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>

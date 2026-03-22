@@ -125,7 +125,7 @@
                 <h6 class="mb-0 text-muted text-uppercase" style="font-size:.75rem;letter-spacing:.08em">
                     Account assignment
                 </h6>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="OpenAccountModal">+ New Account</button>
+                <button type="button" class="btn btn-sm btn-secondary" @onclick="OpenAccountModal">+ New Account</button>
             </div>
             <div class="alert alert-info py-2 mb-3" style="font-size:.875rem">
                 Positive rows (deposits/credits) → <strong>Inflow source</strong> to <strong>Bank account</strong><br />
@@ -187,11 +187,11 @@
                 {
                     <span class="badge bg-warning text-dark">@DuplicateRowCount possible duplicate@(DuplicateRowCount == 1 ? "" : "s")</span>
                 }
-                <button class="btn btn-sm btn-outline-secondary"
+                <button class="btn btn-sm btn-secondary"
                         @onclick="() => { foreach (var r in rowStates) r.Skip = false; }">
                     Select all
                 </button>
-                <button class="btn btn-sm btn-outline-secondary"
+                <button class="btn btn-sm btn-secondary"
                         @onclick="() => { foreach (var r in rowStates) r.Skip = true; }">
                     Deselect all
                 </button>
@@ -316,7 +316,7 @@
             <strong>@DuplicateRowCount possible duplicate@(DuplicateRowCount == 1 ? "" : "s") detected.</strong>
             These transactions may already exist in your records (highlighted in yellow above).
             Review the flagged rows and uncheck any you want to skip, or click <em>Proceed Anyway</em> to import all selected rows.
-            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="CancelDuplicateConfirmation">Reset</button>
+            <button type="button" class="btn btn-sm btn-secondary ms-2" @onclick="CancelDuplicateConfirmation">Reset</button>
         </div>
     }
 
