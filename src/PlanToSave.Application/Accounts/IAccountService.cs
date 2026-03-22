@@ -29,4 +29,11 @@ public interface IAccountService
     /// </summary>
     Task<List<AccountTransactionDto>> GetAccountTransactionsAsync(
         string userId, Guid accountId);
+
+    /// <summary>
+    /// Returns <c>null</c> if <paramref name="name"/> is available for the user,
+    /// or the next available name with a numeric suffix (e.g. "Name 2") if the name is already taken.
+    /// Only active (non-archived) accounts are considered.
+    /// </summary>
+    Task<string?> SuggestUniqueNameAsync(string userId, string name);
 }
