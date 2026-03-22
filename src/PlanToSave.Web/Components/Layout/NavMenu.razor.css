@@ -27,15 +27,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255,255,255,0.85);
+    color: #fff;
     border-bottom: 1px solid rgba(255,255,255,0.07);
     margin-bottom: 6px;
     flex-shrink: 0;
     text-decoration: none !important;
-    transition: color 0.13s;
+    transition: background 0.13s, color 0.13s;
 }
 
 .rail-logo:hover {
+    background: rgba(255,255,255,0.09);
     color: #fff;
 }
 

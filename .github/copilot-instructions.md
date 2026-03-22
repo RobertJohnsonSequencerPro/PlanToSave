@@ -550,7 +550,7 @@ Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no
 | Rail background | `#111` |
 | Icon default | `#fff` |
 | Icon hover / active | `#fff` / `#fff` |
-| Logo icon | `rgba(255,255,255,0.85)`, hover `#fff` |
+| Logo icon | `#fff`, hover background `rgba(255,255,255,0.09)` |
 | Section label | `rgba(255,255,255,0.38)` |
 | Section divider | `rgba(255,255,255,0.10)` |
 
