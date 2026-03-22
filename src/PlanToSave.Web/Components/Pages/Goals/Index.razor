@@ -333,16 +333,16 @@ else
                     <div class="d-flex gap-2">
                         @if (!goal.IsComplete)
                         {
-                            <button class="btn btn-sm btn-outline-primary"
+                            <button class="btn btn-sm btn-primary"
                                     @onclick="() => OpenScheduleModal(goal)">
-                                📅 Generate Schedule
+                                Generate Schedule
                             </button>
                         }
-                        <button class="btn btn-sm @(goal.IsComplete ? "btn-outline-secondary" : "btn-outline-success")"
+                        <button class="btn btn-sm @(goal.IsComplete ? "btn-secondary" : "btn-success")"
                                 @onclick="() => ToggleComplete(goal.Id)">
                             @(goal.IsComplete ? "Reopen" : "Mark Complete")
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete goal"
+                        <button class="btn btn-sm btn-danger" title="Delete" aria-label="Delete goal"
                                 @onclick="() => DeleteGoal(goal.Id, goal.Name)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>

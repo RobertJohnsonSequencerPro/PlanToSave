@@ -60,6 +60,11 @@
     margin-bottom: 3px;
 }
 
+/* Today's date number: use primary blue in light mode */
+.cal-day-num-today {
+    color: #1b6ec2;
+}
+
 .cal-event {
     font-size: 0.68rem;
     font-weight: 500;
@@ -149,7 +154,12 @@
 }
 
 [data-theme="dark"] .cal-day-num {
-    color: #ffffff;
+    color: #ffffff !important;
+}
+
+/* Today and selected day numbers are always stark white in dark mode */
+[data-theme="dark"] .cal-day-num-today {
+    color: #ffffff !important;
 }
 
 [data-theme="dark"] .cal-event-upcoming {

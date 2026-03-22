@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,11 @@ using PlanToSave.Web.Data;
 using PlanToSave.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Force en-US culture so ToString("C") always renders "$" regardless of server locale
+var enUs = new CultureInfo("en-US");
+CultureInfo.DefaultThreadCurrentCulture = enUs;
+CultureInfo.DefaultThreadCurrentUICulture = enUs;
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

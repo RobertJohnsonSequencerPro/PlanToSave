@@ -7,16 +7,38 @@ html, body {
 body {
     font-size: 1.0625rem; /* ≈17 px — slightly larger base for readability */
     color: #000; /* jet black for maximum contrast in light mode */
+    --bs-body-color: #000; /* override Bootstrap's default #212529 gray so var(--bs-body-color) components also render black */
 }
 
 a, .btn-link {
     color: #006bb7;
 }
 
+/* Single primary interactive blue — used by btn-primary, btn-outline-primary, and bg-primary badges.
+   #1b6ec2 on white = 4.7:1 (WCAG AA). Bootstrap's default #0d6efd = 3.1:1 (fails AA). */
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
     border-color: #1861ac;
+}
+.btn-primary:hover  { background-color: #1861ac; border-color: #165ba3; }
+
+/* Unify outline-primary to the same blue as filled btn-primary */
+.btn-outline-primary {
+    color: #1b6ec2;
+    border-color: #1b6ec2;
+}
+.btn-outline-primary:hover,
+.btn-outline-primary:active,
+.btn-outline-primary.active {
+    background-color: #1b6ec2;
+    border-color: #1b6ec2;
+    color: #fff;
+}
+
+/* Unify bg-primary badges to the same blue (Bootstrap 5.1 hardcodes #0d6efd) */
+.bg-primary {
+    background-color: #1b6ec2 !important;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
@@ -300,6 +322,10 @@ h1:focus {
 /* ── Buttons ─────────────────────────────────────────────── */
 [data-theme="dark"] .btn-outline-secondary { color: #ffffff; border-color: #4a5568; }
 [data-theme="dark"] .btn-outline-secondary:hover { background-color: #3a4258; color: #ffffff; border-color: #4a5568; }
+/* btn-outline-primary in dark mode: use #74b8ff (7.5:1 on #21272f) so it reads against dark surfaces */
+[data-theme="dark"] .btn-outline-primary { color: #74b8ff; border-color: #74b8ff; }
+[data-theme="dark"] .btn-outline-primary:hover,
+[data-theme="dark"] .btn-outline-primary:active { background-color: #74b8ff; border-color: #74b8ff; color: #111; }
 [data-theme="dark"] .btn-outline-dark { color: #ffffff; border-color: #5a6680; }
 [data-theme="dark"] .btn-outline-dark:hover { background-color: #3a4258; color: #fff; }
 [data-theme="dark"] .btn-light { background-color: #252c3d; border-color: #404859; color: #ffffff; }

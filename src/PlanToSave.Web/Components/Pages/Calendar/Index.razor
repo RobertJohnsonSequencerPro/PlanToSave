@@ -51,7 +51,7 @@ else
                      @onclick="() => SelectDay(dayNum)">
                     @if (dayNum > 0)
                     {
-                        <span class="cal-day-num @(isToday ? "text-primary" : "")">@dayNum</span>
+                        <span class="cal-day-num @(isToday ? "cal-day-num-today" : "")">@dayNum</span>
                         @foreach (var ev in evs.Take(2))
                         {
                             <div class="cal-event @GetStatusClass(ev.Status)">@ev.IdeaTitle</div>

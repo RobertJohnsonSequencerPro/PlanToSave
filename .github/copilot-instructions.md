@@ -72,6 +72,7 @@ src/
 - Nav is an icon-only vertical rail with CSS tooltips (`class="rail-tooltip" data-tip="..."`)
 - All dark mode overrides live in `wwwroot/app.css` under `[data-theme="dark"]`
 - Never use `style="..."` inline attributes — use CSS classes instead (see Anti-patterns)
+- **Never apply Bootstrap utility classes like `text-primary` to text that must be white in dark mode.** Bootstrap compiles these with `!important`, which overrides scoped CSS dark mode rules. Instead, use a custom CSS class and control both light/dark colors in the scoped `.razor.css` file with explicit `!important` on the dark override.
 
 ---
 
@@ -117,6 +118,7 @@ Rules:
 - Destructive: `btn btn-danger` (confirmation required — see Delete pattern)
 - All header buttons are **full size** (not `btn-sm`)
 - Use `+ Label` prefix for "add new" actions — no emoji in button labels
+- **Prefer filled buttons** (`btn-primary`, `btn-success`, `btn-secondary`, `btn-danger`) over outline variants everywhere except modal Cancel buttons and page-header secondary actions. Outline buttons have colored text on a transparent background and fail to read as white in dark mode.
 
 ---
 
@@ -468,16 +470,21 @@ Dark mode is manual (`[data-theme="dark"]` on `<html>`) — Bootstrap 5.1 has no
 | Role | Hex | Usage |
 |------|-----|-------|
 | Ideas / amber | `#ffc107` | Pipeline stage border, badge bg, nav active icon, partial-tracked state |
-| Goals / blue | `#0d6efd` | Pipeline stage border, nav active icon, Goal-related accents |
+| Goals / brand blue | `#0d6efd` | Pipeline stage border, nav active icon, Goal-related accents only — **do not use for interactive elements** |
+| Primary interactive blue | `#1b6ec2` | `btn-primary`, `btn-outline-primary`, `bg-primary` badges — the single shared blue for all buttons and badges (light mode). Dark mode equivalent: `#74b8ff` for outline/text uses. |
 | Budgeted / teal | `#0dcaf0` | Pipeline stage border, Plans accents |
 | Tracked / grey | `#6c757d` | Pipeline stage border (inactive) |
 | Complete / green | `#198754` | Pipeline tracked-complete border, success states |
 
+> **Blue rule:** There is exactly one interactive blue: `#1b6ec2` (light) / `#74b8ff` (dark). The brand blue `#0d6efd` is only for decorative/accent pipeline borders and nav icons — never use it as a button or badge color. This prevents two near-identical blues appearing side-by-side.
+
 #### Light Mode
+
+> **Rule: all primary/readable text must be `#000` in light mode and `#fff` in dark mode. Never render body copy, table cells, labels, or headings in gray. Gray (`text-muted`) is reserved exclusively for supplemental, secondary, or decorative text (captions, subtitles, placeholder hints). If text needs to be readable, it must be black/white.**
 
 | Role | Hex | Notes |
 |------|-----|-------|
-| Body text | `#000` | Jet black — maximum contrast |
+| Body text | `#000` | Jet black — maximum contrast. Also sets `--bs-body-color: #000` so Bootstrap components using the CSS variable also render black. |
 | Link | `#006bb7` | |
 | `.text-muted` | `#5a6472` | ~5.5:1 WCAG AA on white |
 | `.text-warning` | `#92400e` | 9.3:1 — replaces Bootstrap's low-contrast yellow |
