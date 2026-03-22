@@ -555,6 +555,89 @@ public class AccountServiceTests
         Assert.Equal(5m, balances[0].AnnualRatePct);
     }
 
+    // ── SuggestUniqueNameAsync ────────────────────────────────────────
+
+    [Fact]
+    public async Task SuggestUniqueNameAsync_ReturnsNull_WhenNameIsAvailable()
+    {
+        await using var db = TestDbContextFactory.Create();
+        var svc = new AccountService(db);
+
+        var result = await svc.SuggestUniqueNameAsync("user-1", "New Account");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task SuggestUniqueNameAsync_ReturnsSuffixedName_WhenNameIsTaken()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Accounts.Add(MakeAccount("user-1", "Main Checking", AccountType.Checking));
+        await db.SaveChangesAsync();
+        var svc = new AccountService(db);
+
+        var result = await svc.SuggestUniqueNameAsync("user-1", "Main Checking");
+
+        Assert.Equal("Main Checking 2", result);
+    }
+
+    [Fact]
+    public async Task SuggestUniqueNameAsync_IncrementsCounter_WhenSuffixedNamesAlsoTaken()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Accounts.AddRange(
+            MakeAccount("user-1", "Savings",   AccountType.Savings),
+            MakeAccount("user-1", "Savings 2", AccountType.Savings),
+            MakeAccount("user-1", "Savings 3", AccountType.Savings));
+        await db.SaveChangesAsync();
+        var svc = new AccountService(db);
+
+        var result = await svc.SuggestUniqueNameAsync("user-1", "Savings");
+
+        Assert.Equal("Savings 4", result);
+    }
+
+    [Fact]
+    public async Task SuggestUniqueNameAsync_IsCaseInsensitive()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Accounts.Add(MakeAccount("user-1", "main checking", AccountType.Checking));
+        await db.SaveChangesAsync();
+        var svc = new AccountService(db);
+
+        var result = await svc.SuggestUniqueNameAsync("user-1", "Main Checking");
+
+        Assert.Equal("Main Checking 2", result);
+    }
+
+    [Fact]
+    public async Task SuggestUniqueNameAsync_IgnoresArchivedAccounts()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Accounts.Add(MakeAccount("user-1", "Old Account", AccountType.Checking, archived: true));
+        await db.SaveChangesAsync();
+        var svc = new AccountService(db);
+
+        // Archived account should not block the name
+        var result = await svc.SuggestUniqueNameAsync("user-1", "Old Account");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task SuggestUniqueNameAsync_IsolatesUserData()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Accounts.Add(MakeAccount("user-2", "Shared Name", AccountType.Checking));
+        await db.SaveChangesAsync();
+        var svc = new AccountService(db);
+
+        // user-1 has no account with this name, even though user-2 does
+        var result = await svc.SuggestUniqueNameAsync("user-1", "Shared Name");
+
+        Assert.Null(result);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────
 
     private static Account MakeAccount(

@@ -212,6 +212,29 @@ public class AccountService(ApplicationDbContext db) : IAccountService
             .ToListAsync();
     }
 
+    public async Task<string?> SuggestUniqueNameAsync(string userId, string name)
+    {
+        var trimmed = name.Trim();
+
+        var existingNames = await db.Accounts
+            .Where(a => a.UserId == userId && !a.IsArchived)
+            .Select(a => a.Name)
+            .ToListAsync();
+
+        if (!existingNames.Any(n => string.Equals(n, trimmed, StringComparison.OrdinalIgnoreCase)))
+            return null;
+
+        for (int i = 2; i <= 999; i++)
+        {
+            var candidate = $"{trimmed} {i}";
+            if (!existingNames.Any(n => string.Equals(n, candidate, StringComparison.OrdinalIgnoreCase)))
+                return candidate;
+        }
+
+        throw new InvalidOperationException(
+            $"Could not find an available name based on \"{trimmed}\" — too many accounts with similar names.");
+    }
+
     private static AccountDto ToDto(Account a) =>
         new(a.Id, a.Name, a.Type, a.Description, a.OpeningBalance, a.IsArchived, a.IsStockAccount);
 

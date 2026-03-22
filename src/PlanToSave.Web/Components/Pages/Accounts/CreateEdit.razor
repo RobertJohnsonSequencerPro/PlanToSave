@@ -77,6 +77,11 @@
                     </div>
                 }
 
+                @if (!string.IsNullOrEmpty(duplicateWarning))
+                {
+                    <div class="alert alert-warning mt-3">@duplicateWarning</div>
+                }
+
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
                     <div class="alert alert-danger">@errorMessage</div>
@@ -176,6 +181,10 @@
     private bool notFound = false;
     private string? errorMessage;
 
+    private string? duplicateWarning;
+    private string? pendingSuggestedName;
+    private string? nameAtWarning;
+
     private InterestRuleDto? existingRule;
     private SetInterestRuleDto interestModel = new();
     private bool savingInterest = false;
@@ -221,14 +230,44 @@
         if (model is null) return;
         saving = true;
         errorMessage = null;
+        duplicateWarning = null;
 
         try
         {
             if (Id is null)
             {
+                var nameToUse = model.Name.Trim();
+
+                // If the user saw the warning and has not changed the name, proceed with the suggested name.
+                if (pendingSuggestedName is not null &&
+                    string.Equals(nameToUse, nameAtWarning, StringComparison.OrdinalIgnoreCase))
+                {
+                    nameToUse = pendingSuggestedName;
+                    pendingSuggestedName = null;
+                    nameAtWarning = null;
+                }
+                else
+                {
+                    // Fresh duplicate check.
+                    pendingSuggestedName = null;
+                    nameAtWarning = null;
+
+                    var suggested = await AccountService.SuggestUniqueNameAsync(userId, nameToUse);
+                    if (suggested is not null)
+                    {
+                        pendingSuggestedName = suggested;
+                        nameAtWarning = nameToUse;
+                        duplicateWarning = $"An account named \"{nameToUse}\" already exists. " +
+                                           $"Click Save again to save it as \"{suggested}\", " +
+                                           $"or change the name above to use something different.";
+                        saving = false;
+                        return;
+                    }
+                }
+
                 await AccountService.CreateAsync(userId, new CreateAccountDto
                 {
-                    Name = model.Name,
+                    Name = nameToUse,
                     Type = model.Type,
                     Description = model.Description,
                     OpeningBalance = model.OpeningBalance
