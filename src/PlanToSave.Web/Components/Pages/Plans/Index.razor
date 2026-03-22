@@ -58,7 +58,7 @@ else
                         <td class="text-end @varianceClass fw-semibold">@(varianceSign + variance.ToString("C"))</td>
                         <td class="text-center text-muted">@plan.PlannedFlowCount</td>
                         <td class="text-end">
-                            <a href="/plans/@plan.Year/@plan.Month" class="btn btn-sm btn-outline-secondary"
+                            <a href="/plans/@plan.Year/@plan.Month" class="btn btn-sm btn-secondary"
                                @onclick:stopPropagation="true">
                                 View →
                             </a>

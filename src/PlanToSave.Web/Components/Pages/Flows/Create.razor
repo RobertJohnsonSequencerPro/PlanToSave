@@ -100,10 +100,10 @@
                         @if (saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
                         Save Transaction
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" @onclick="SaveAndNew" disabled="@saving">
+                    <button type="button" class="btn btn-secondary" @onclick="SaveAndNew" disabled="@saving">
                         Save &amp; Log Another
                     </button>
-                    <a href="/flows" class="btn btn-outline-secondary">Cancel</a>
+                    <a href="/flows" class="btn btn-secondary">Cancel</a>
                 </div>
             </EditForm>
         }

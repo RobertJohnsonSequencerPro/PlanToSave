@@ -36,7 +36,7 @@
                     <p class="text-muted small mb-0">Click any idea below to pre-fill the form. Life is richer when you plan for both the fun <em>and</em> the practical.</p>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="ShuffleSuggestions" title="Show a different set of ideas">🔀 Shuffle</button>
+                    <button type="button" class="btn btn-sm btn-warning" @onclick="ShuffleSuggestions" title="Show a different set of ideas">🔀 Shuffle</button>
                     <button type="button" class="btn-close" @onclick="ToggleSuggestions" aria-label="Close"></button>
                 </div>
             </div>
@@ -175,7 +175,7 @@
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary btn-sm" @onclick="ApplyFilter">Filter</button>
-                <button class="btn btn-outline-secondary btn-sm ms-1" @onclick="ClearFilter">Clear</button>
+                <button class="btn btn-secondary btn-sm ms-1" @onclick="ClearFilter">Clear</button>
             </div>
         </div>
     </div>
@@ -196,7 +196,7 @@ else if (ideas.Count == 0)
                 </svg>
                 <p class="mb-1 fw-semibold">No ideas match those filters.</p>
                 <p class="mb-2 small">Try broadening your search or clearing the filters.</p>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearFilter">Clear filters</button>
+                <button class="btn btn-sm btn-secondary" @onclick="ClearFilter">Clear filters</button>
             }
             else
             {
@@ -207,7 +207,7 @@ else if (ideas.Count == 0)
                 <p class="mb-3 small">This is where you collect everything you want to plan for — a trip to Japan, a weekend kayak, <em>and</em> practical things like replacing worn tires before they leave you stranded. Big dreams and smart prep, all in one place.</p>
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
                     <button class="btn btn-primary" @onclick="ToggleAddForm">+ Add your first idea</button>
-                    <button class="btn btn-outline-warning" @onclick="OpenSuggestions">💡 Get inspired</button>
+                    <button class="btn btn-warning" @onclick="OpenSuggestions">💡 Get inspired</button>
                 </div>
             }
         </div>
@@ -261,19 +261,19 @@ else
                         <td class="text-end">
                             @if (idea.Status == IdeaStatus.Backlog)
                             {
-                                <button class="btn btn-sm btn-outline-primary me-1"
+                                <button class="btn btn-sm btn-primary me-1"
                                         @onclick="() => StartPlanThis(idea.Id, idea.Title)"
                                         title="Schedule this idea">
                                     Plan This
                                 </button>
-                                <a href="/goals?ideaId=@idea.Id" class="btn btn-sm btn-outline-success me-1"
+                                <a href="/goals?ideaId=@idea.Id" class="btn btn-sm btn-success me-1"
                                    title="Create a savings goal toward this idea">
                                     Save for this →
                                 </a>
                             }
                             @if (ideaPlan is not null)
                             {
-                                <a href="/upcoming/@ideaPlan.Id" class="btn btn-sm btn-outline-primary me-1"
+                                <a href="/upcoming/@ideaPlan.Id" class="btn btn-sm btn-primary me-1"
                                    title="View and edit this plan">
                                     Edit Plan →
                                 </a>
@@ -337,7 +337,7 @@ else
                             <input type="text" class="form-control" placeholder="e.g. Book venue, Pack gear…"
                                    @bind="newPlanStepTitle" @bind:event="oninput"
                                    @onkeydown="OnPlanStepKeyDown" />
-                            <button type="button" class="btn btn-outline-secondary"
+                            <button type="button" class="btn btn-secondary"
                                     @onclick="AddPlanStep"
                                     disabled="@(string.IsNullOrWhiteSpace(newPlanStepTitle))">
                                 Add
@@ -462,7 +462,7 @@ else
 
     private static readonly IdeaGroup[] AllIdeaSuggestions =
     [
-        new("🎉 Fun & Entertainment", "btn-outline-primary",
+        new("🎉 Fun & Entertainment", "btn-primary",
         [
             new("Attend a live concert or show", IdeaCategory.Entertainment),
             new("Host a backyard game night", IdeaCategory.Entertainment),
@@ -540,7 +540,7 @@ else
             new("Visit a local comedy club for open mic night", IdeaCategory.Entertainment),
             new("Go to an art walk or gallery hop", IdeaCategory.Entertainment),
         ]),
-        new("✈️ Travel & Adventure", "btn-outline-info",
+        new("✈️ Travel & Adventure", "btn-info",
         [
             new("Take a weekend road trip", IdeaCategory.Travel),
             new("Plan an international vacation", IdeaCategory.Travel),
@@ -619,7 +619,7 @@ else
             new("Do a sunrise hike", IdeaCategory.Travel),
             new("Visit an ice hotel or snow village", IdeaCategory.Travel),
         ]),
-        new("🍽️ Dining & Social", "btn-outline-warning",
+        new("🍽️ Dining & Social", "btn-warning",
         [
             new("Try that restaurant on the wishlist", IdeaCategory.Dining),
             new("Take a cooking class", IdeaCategory.Dining),
@@ -698,7 +698,7 @@ else
             new("Attend an outdoor food and wine festival", IdeaCategory.Dining),
             new("Try a meal kit subscription for a month", IdeaCategory.Dining),
         ]),
-        new("🔧 Practical & Responsible", "btn-outline-secondary",
+        new("🔧 Practical & Responsible", "btn-secondary",
         [
             new("Replace car tires before they wear out", IdeaCategory.Other),
             new("Build a 3-month emergency fund", IdeaCategory.Other),
@@ -777,7 +777,7 @@ else
             new("Set up a recurring donation to your child's school", IdeaCategory.Other),
             new("Create a rotating grocery and meal prep schedule", IdeaCategory.Other),
         ]),
-        new("🌱 Wellness & Health", "btn-outline-success",
+        new("🌱 Wellness & Health", "btn-success",
         [
             new("Join a gym or fitness class", IdeaCategory.Wellness),
             new("Schedule an annual physical", IdeaCategory.Wellness),
@@ -855,7 +855,7 @@ else
             new("Try a juice cleanse or reset week", IdeaCategory.Wellness),
             new("Sign up for a charity walk or run", IdeaCategory.Wellness),
         ]),
-        new("📚 Learning & Growth", "btn-outline-dark",
+        new("📚 Learning & Growth", "btn-secondary",
         [
             new("Take an online course", IdeaCategory.Learning),
             new("Learn a new language", IdeaCategory.Learning),

@@ -300,7 +300,7 @@ Rules:
         <p class="mb-0 small">Explanatory sentence. Optional action below.</p>
         @* optional: *@
         <div class="mt-3">
-            <button class="btn btn-sm btn-outline-secondary" @onclick="...">Take action</button>
+            <button class="btn btn-sm btn-secondary" @onclick="...">Take action</button>
         </div>
     </div>
 </div>
@@ -311,7 +311,7 @@ Rules:
 - SVG icon: 36×36, `class="mb-3 text-muted"` — include when the emptiness needs visual weight
 - Heading line: `fw-semibold`, `mb-1`
 - Description: `small`, `mb-0`
-- Action button (optional): `btn btn-sm btn-outline-secondary`, inside `mt-3` div
+- Action button (optional): `btn btn-sm btn-secondary`, inside `mt-3` div
 
 ---
 

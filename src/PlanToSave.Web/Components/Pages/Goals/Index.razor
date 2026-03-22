@@ -283,11 +283,11 @@ else if (goals.Count == 0)
 else
 {
     <div class="mb-3 d-flex gap-2">
-        <button class="btn btn-sm @(showComplete == false ? "btn-primary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(showComplete == false ? "btn-primary" : "btn-secondary")"
                 @onclick="() => showComplete = false">
             Active (@goals.Count(g => !g.IsComplete))
         </button>
-        <button class="btn btn-sm @(showComplete == true ? "btn-secondary" : "btn-outline-secondary")"
+        <button class="btn btn-sm @(showComplete == true ? "btn-success" : "btn-secondary")"
                 @onclick="() => showComplete = true">
             Completed (@goals.Count(g => g.IsComplete))
         </button>
